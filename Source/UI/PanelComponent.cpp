@@ -104,14 +104,12 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     bindLfoControls();
 
     // ================= MOD =================
+    // One button, level with SHAPE, opens the mod matrix (lit while it's open). No label.
     {
-        auto& src = addButton (533, 538, false);
-        src.onClick = [this] { if (onPanelAction) onPanelAction ("modSrc"); };
-        auto& dst = addButton (533, 643, false);
-        dst.onClick = [this] { if (onPanelAction) onPanelAction ("modDest"); };
+        auto& mod = addButton (533, 538, false);
+        mod.onClick = [this] { if (onPanelAction) onPanelAction ("modmatrix"); };
+        mod.litWhen = [this] { return isActionLit && isActionLit ("modmatrix"); };
     }
-    label ("SRC", 533, 573);
-    label ("DEST", 533, 677);
 
     // ================= SETTINGS / OLED / MEMORY =================
     addButton (620, 520, false).onClick = [this] { if (onPanelAction) onPanelAction ("global"); };

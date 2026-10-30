@@ -128,7 +128,8 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
     };
     panel.isActionLit = [this] (const juce::String& a)
     {
-        return (a == "compare" && comparing) || (a == "library" && library.isVisible());
+        return (a == "compare" && comparing) || (a == "library" && library.isVisible())
+            || (a == "modmatrix" && modMatrix.isVisible());
     };
     panel.getOled().onDoubleClick = [this] { renameCurrentProgram(); };
     processor.getMidiSync().onRemoteChange = [this] (const juce::String& id) { panel.showParameter (id); };
@@ -192,6 +193,8 @@ void TEO5Editor::handlePanelAction (const juce::String& action)
     }
     else if (action == "library")
         setLibraryOpen (! library.isVisible());
+    else if (action == "modmatrix")
+        setModMatrixOpen (! modMatrix.isVisible());
     else if (action == "global")
         setGlobalOpen (! globalDrawer.isVisible());
     else if (action == "program")
