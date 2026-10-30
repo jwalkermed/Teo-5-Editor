@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 The TEO-5 Editor project
 // Loads "TEO-5 Editor.vst3" the way a DAW's plug-in scanner does and reports what happens.
 // Usage: TEO5PluginCheck [path/to/TEO-5 Editor.vst3]
 #include <juce_audio_processors/juce_audio_processors.h>

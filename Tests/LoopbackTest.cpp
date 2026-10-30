@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 The TEO-5 Editor project
 // End-to-end checks of the MIDI path without hardware, against a fake TEO-5.
 //
 // The fake stores each NRPN at offset 2*NRPN (16-bit little-endian) of a 4096-byte program, keeps a

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 The TEO-5 Editor project
 // Renders the plugin editor offscreen to a PNG so the panel can be compared with the reference photo.
 // Usage: TEO5Snapshot <output.png> [scale] [drawer|library|modmatrix|sequencer|global|program|oled "message"]
 

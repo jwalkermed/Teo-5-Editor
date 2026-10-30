@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 The TEO-5 Editor project
 #include "ProgramLayout.h"
 #include "../Params/ParamTable.h"
 #include <set>

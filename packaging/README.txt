@@ -1,6 +1,10 @@
 TEO-5 Editor: editor/librarian for the Oberheim TEO-5
 Apple Silicon and Intel Macs (universal binary), macOS 11 or later.
 
+Copyright (C) 2026 The TEO-5 Editor project. Free software under the GNU Affero General Public License v3
+or later, WITHOUT ANY WARRANTY; see LICENSE.txt. Third-party software: see THIRD-PARTY-NOTICES.md.
+Source code: https://github.com/jwalkermed/Teo-5-Editor
+
 INSTALL
   Open Terminal, then type "bash " (with a space) and drag install.command into the window. Press Return:
 

@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 The TEO-5 Editor project
 # Installs TEO-5 Editor from this folder:
 #   VST3       -> /Library/Audio/Plug-Ins/VST3
 #   AU         -> /Library/Audio/Plug-Ins/Components

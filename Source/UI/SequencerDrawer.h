@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 The TEO-5 Editor project
 #pragma once
 
 #include <juce_audio_utils/juce_audio_utils.h>

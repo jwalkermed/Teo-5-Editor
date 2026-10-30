@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 The TEO-5 Editor project
 // Unit tests for the TEO-5 MIDI layer. Run: build/TEO5Tests_artefacts/Release/TEO5Tests (or `ctest`).
 
 #include <juce_audio_basics/juce_audio_basics.h>

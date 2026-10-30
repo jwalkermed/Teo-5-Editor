@@ -2,6 +2,8 @@
 
 VST3 / AU / Standalone editor-librarian for the Oberheim TEO-5 desktop module, built with JUCE 8 + CMake.
 
+![TEO-5 Editor front panel](docs/screenshots/panel.png)
+
 > Status: version 1.0. Front panel, MIDI sync, librarian, mod matrix and sequencer are done and in use with a TEO-5.
 
 ## Librarian
@@ -95,4 +97,16 @@ build/TEO5LoopbackTest_artefacts/Release/TEO5LoopbackTest  # end-to-end against 
 ```
 - `docs/TEO5-MIDI-Implementation.txt`: the spec the table is built from. `VERIFY.md` lists every unconfirmed item.
 
-Font: Michroma (SIL OFL, `Resources/Fonts/`).
+## Licence
+
+TEO-5 Editor, Copyright (C) 2026 The TEO-5 Editor project.
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero
+General Public License as published by the Free Software Foundation, either version 3 of the License, or (at
+your option) any later version. It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See `LICENSE` for
+the full text.
+
+Third-party software (JUCE, the VST3 and Audio Unit SDKs, the Michroma font) is listed in
+`THIRD-PARTY-NOTICES.md`. Oberheim and TEO-5 are trademarks of their owner; this project is not affiliated with
+or endorsed by Oberheim.

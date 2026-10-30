@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 The TEO-5 Editor project
 // Talks to the TEO-5 directly, for hardware experiments (used to map the global settings dump).
 // Usage: TEO5MidiProbe [--port NAME] [--channel N] command...
 //   globals          request the global dump and print its data bytes (hex), one line
