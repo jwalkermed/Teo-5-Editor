@@ -9,7 +9,7 @@ namespace teo5
 MidiSettingsDrawer::MidiSettingsDrawer (MidiSync& s, ProgramState& ps) : sync (s), programState (ps)
 {
     const auto text = Palette::silkscreen;
-    for (auto* l : { &title, &inLabel, &outLabel, &chLabel, &modeLabel, &nameLabel, &statusLabel })
+    for (auto* l : { &title, &inLabel, &outLabel, &chLabel, &modeLabel, &statusLabel })
     {
         l->setColour (juce::Label::textColourId, text);
         l->setFont (TEO5LookAndFeel::panelFont (l == &title ? 14.0f : 10.5f));
@@ -33,6 +33,8 @@ MidiSettingsDrawer::MidiSettingsDrawer (MidiSync& s, ProgramState& ps) : sync (s
     modeBox.addItem ("CC", 2);
 
     playToggle.setTooltip ("Notes, pitch bend, mod wheel, aftertouch and pedals played into this track are sent to the TEO-5 on its channel");
+    hostToggle.setTooltip ("For when the DAW holds the TEO-5's MIDI port and the editor can't open it. Knobs work this way, "
+                           "but many DAWs don't pass SysEx, which program transfers need");
     for (auto* t : { &hostToggle, &requestToggle, &playToggle })
     {
         t->setColour (juce::ToggleButton::textColourId, text);
@@ -41,8 +43,11 @@ MidiSettingsDrawer::MidiSettingsDrawer (MidiSync& s, ProgramState& ps) : sync (s
         t->onClick = [this] { pushSettings(); };
         addAndMakeVisible (t);
     }
+    // Routing through the DAW is only for Windows, where a MIDI port the DAW has open often can't be shared.
+    // On macOS ports are shared, so the editor always opens them itself and the option is hidden.
+    hostToggle.setVisible (showHostRouting);
 
-    for (auto* b : { &refreshButton, &inquiryButton, &setupButton, &receiveButton, &sendButton, &sendAllButton, &testNoteButton, &probeButton, &locateButton, &clearMonitorButton })
+    for (auto* b : { &refreshButton, &inquiryButton, &setupButton, &receiveButton, &sendButton, &sendAllButton, &testNoteButton, &clearMonitorButton })
     {
         b->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff232427));
         b->setColour (juce::TextButton::textColourOffId, text);
@@ -88,34 +93,6 @@ MidiSettingsDrawer::MidiSettingsDrawer (MidiSync& s, ProgramState& ps) : sync (s
         sync.getPorts().clearLog();
         lastLogSize = lastSent = lastReceived = -1;
     };
-    probeButton.onClick = [this]
-    {
-        if (sync.isProbing())
-        {
-            sync.cancelLayoutProbe();
-            return;
-        }
-        juce::AlertWindow::showOkCancelBox (
-            juce::MessageBoxIconType::QuestionIcon, "Map program dump layout",
-            "The editor will step every parameter on the TEO-5 to its minimum and maximum, request the edit buffer "
-            "after each change, and work out where each value is stored. It takes a few minutes.\n\n"
-            "Only the edit buffer is changed (each value is restored afterwards); nothing is written to memory.\n\n"
-            "On the TEO-5, set Global > MIDI Param Receive = NRPN and MIDI SysEx = On, with the SysEx cable matching this connection.",
-            "Start", "Cancel", this,
-            juce::ModalCallbackFunction::create ([this] (int r) { if (r == 1) sync.startLayoutProbe(); }));
-    };
-    locateButton.onClick = [this] { sync.locateName (nameEditor.getText()); };
-
-    nameEditor.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0xff141517));
-    nameEditor.setColour (juce::TextEditor::textColourId, text);
-    nameEditor.setColour (juce::TextEditor::outlineColourId, Palette::pinstripe.withAlpha (0.6f));
-    nameEditor.setText (programState.name, false);
-    addAndMakeVisible (nameEditor);
-
-    progressBar.setColour (juce::ProgressBar::foregroundColourId, Palette::pinstripe);
-    addAndMakeVisible (progressBar);
-    progressBar.setVisible (false);
-
     refreshPorts();
     sync.addChangeListener (this);
     changeListenerCallback (nullptr);
@@ -180,23 +157,14 @@ void MidiSettingsDrawer::pushSettings()
 
 void MidiSettingsDrawer::changeListenerCallback (juce::ChangeBroadcaster*)
 {
-    auto layoutInfo = sync.getLayout().isEmpty()
-                          ? juce::String ("Dump layout: not mapped yet")
-                          : "Dump layout: " + juce::String (sync.getLayout().size()) + " parameters mapped"
-                                + (sync.getLayout().nameOffset >= 0 ? ", name located" : ", name not located");
-    statusLabel.setText (sync.getStatus() + "\n" + layoutInfo
-                             + (sync.firmware.isNotEmpty() ? "\nTEO-5 OS " + sync.firmware : juce::String()),
+    const auto status = sync.getStatus();
+    const bool showFirmware = sync.firmware.isNotEmpty() && ! status.contains (sync.firmware); // "TEO-5 found, OS ..." has it
+    statusLabel.setText (status + (showFirmware ? "\nTEO-5 OS " + sync.firmware : juce::String()),
                          juce::dontSendNotification);
 }
 
 void MidiSettingsDrawer::timerCallback()
 {
-    const bool probing = sync.isProbing();
-    progressBar.setVisible (probing);
-    progress = sync.probeProgress();
-    probeButton.setButtonText (probing ? "Cancel mapping" : "Map dump layout...");
-    if (! nameEditor.hasKeyboardFocus (true) && nameEditor.getText() != programState.name)
-        nameEditor.setText (programState.name, false);
 
     // MIDI monitor.
     auto& ports = sync.getPorts();
@@ -247,7 +215,8 @@ void MidiSettingsDrawer::resized()
         modeLabel.setBounds (x.removeFromLeft (56));
         modeBox.setBounds (x);
     }
-    hostToggle.setBounds (row (22));
+    if (showHostRouting)
+        hostToggle.setBounds (row (22));
     requestToggle.setBounds (row (22));
     playToggle.setBounds (row (22));
     {
@@ -272,16 +241,7 @@ void MidiSettingsDrawer::resized()
         testNoteButton.setBounds (x);
     }
     r.removeFromTop (6);
-    probeButton.setBounds (row());
-    progressBar.setBounds (row (14));
-    nameLabel.setBounds (row (16));
-    {
-        auto x = row();
-        locateButton.setBounds (x.removeFromRight (96));
-        x.removeFromRight (6);
-        nameEditor.setBounds (x);
-    }
-    statusLabel.setBounds (r.removeFromTop (46));
+    statusLabel.setBounds (r.removeFromTop (32));
     r.removeFromTop (4);
     monitor.setBounds (r);
     clearMonitorButton.setBounds (monitor.getRight() - 54, monitor.getY() + 3, 48, 18); // overlays the monitor's top-right corner

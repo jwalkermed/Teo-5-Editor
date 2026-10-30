@@ -4,7 +4,8 @@ VST3 / AU / Standalone editor-librarian for the Oberheim TEO-5 desktop module, b
 
 ![TEO-5 Editor front panel](docs/screenshots/panel.png)
 
-> Status: version 1.0. Front panel, MIDI sync, librarian, mod matrix and sequencer are done and in use with a TEO-5.
+> Status: version 1.0. The full user's guide is [docs/manual](docs/manual) (built as a PDF into each release).
+> Front panel, MIDI sync, librarian, mod matrix and sequencer are done and in use with a TEO-5.
 
 ## Librarian
 
@@ -35,17 +36,16 @@ A single exported program is an edit-buffer dump; an exported bank is 16 address
 ## Connecting to the TEO-5
 
 1. On the TEO-5, press GLOBAL and set **MIDI Param Send = NRPN**, **MIDI Param Receive = NRPN**, **MIDI SysEx = On**,
-   and set **MIDI SysEx Cable** to the connection you use (USB or MIDI).
+   set **MIDI SysEx Cable** to the connection you use (USB or MIDI), and **MIDI Program Send = On**.
 2. In the editor, click the **MIDI** tab on the right end cheek (the GLOBAL/PROGRAM buttons also open it). Pick the TEO-5
    input/output ports and channel. Use **Find TEO-5** to confirm the connection (it shows the OS version).
-3. One-time setup: click **Map dump layout…** (takes a few minutes; changes only the edit buffer and restores each
-   value). Then type the current program name exactly as the OLED shows it and click **Locate name**.
-   After that, program changes and **Receive edit buffer** update the whole panel.
+3. Program changes and **Receive edit buffer** update the whole panel; the editor knows the TEO-5's program format.
 
 Panel edits are sent immediately as NRPN (or CC, if selected), coalesced and spaced ~1 ms apart. Knob moves on the
-TEO-5 update the panel. **MANUAL** sends every panel value to the synth. Program buttons send Bank Select + Program
+TEO-5 update the panel. **Send all parameters** sends every panel value to the synth. Program buttons send Bank Select + Program
 Change and then fetch the edit buffer. The plugin talks to the ports directly because many DAWs don't pass SysEx.
-Optionally it also routes through the host's MIDI in/out. MIDI settings are saved with the DAW project.
+MIDI settings are saved with the DAW project. (Routing through the DAW's MIDI instead is kept for a possible Windows
+version, where ports often can't be shared; it's hidden on macOS.)
 
 Built plugins are copied to `/Library/Audio/Plug-Ins/VST3` and `~/Library/Audio/Plug-Ins/Components` after
 each build. Turn that off with `-DTEO5_INSTALL_AFTER_BUILD=OFF`.

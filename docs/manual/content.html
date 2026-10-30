@@ -1,0 +1,457 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 The TEO-5 Editor project.
+     The user's guide; built by packaging/make-manual.sh. Screenshot placeholders (shot and img in double braces) are expanded by build.py. -->
+<div class="cover">
+  <h1 class="first">TEO-5 Editor</h1>
+  <div class="sub">Editor and librarian for the Oberheim TEO-5</div>
+  <div class="ver">User's Guide &middot; version {{VERSION}}</div>
+  {{shot panel|The TEO-5 Editor front panel|0|1|0|1|100%}}
+  <div class="small">
+    VST3, Audio Unit and standalone app for macOS 11 or later (Apple Silicon and Intel).<br>
+    Copyright &copy; 2026 The TEO-5 Editor project. Free software under the GNU Affero General Public License v3 or later.<br>
+    Oberheim and TEO-5 are trademarks of their owner. This project is not affiliated with or endorsed by Oberheim.
+  </div>
+</div>
+
+<h1>Contents</h1>
+<ol class="toc">
+  <li>Introduction</li>
+  <li>Installing</li>
+  <li>Connecting to the TEO-5</li>
+  <li>The front panel</li>
+  <li>Choosing, comparing and writing programs</li>
+  <li>Modulation from the panel (right-click)</li>
+  <li>The Library drawer</li>
+  <li>The Mod Matrix drawer</li>
+  <li>The Sequencer drawer</li>
+  <li>The GLOBAL drawer</li>
+  <li>The PROGRAM drawer</li>
+  <li>The MIDI drawer</li>
+  <li>Using TEO-5 Editor in a DAW</li>
+  <li>Troubleshooting</li>
+  <li>Quick reference</li>
+</ol>
+
+<h1>1. Introduction</h1>
+<p>TEO-5 Editor puts the whole TEO-5 on your screen. Every knob and button on the panel matches a control on the
+synth and works both ways: turn a knob on the screen and the TEO-5 follows; turn a knob on the TEO-5 and the screen
+follows. Around the panel are <b>drawers</b> that slide out from the side cheeks for the things the synth's own panel
+can only reach through menus: a librarian, the full 16-slot modulation matrix, a step-sequence editor, and the
+GLOBAL and PROGRAM settings.</p>
+<p>The editor makes no sound itself. It talks to the TEO-5 over MIDI (NRPN messages for the controls, SysEx for
+whole programs and settings). It comes in three forms that all work the same way:</p>
+<ul>
+  <li><b>Standalone app</b> (<i>TEO-5 Editor.app</i>): the simplest way to edit and organise sounds.</li>
+  <li><b>VST3</b> and <b>Audio Unit</b> plug-ins: load the editor on a MIDI track in your DAW, so each project
+  remembers its TEO-5 sound and sends it back to the synth when the project opens.</li>
+</ul>
+
+<h2>What the editor never does without asking</h2>
+<p>Loading programs, turning knobs and editing sequences only change the TEO-5's <b>edit buffer</b> (the sound
+you're playing). Nothing is stored in the synth's memory until you choose to write it, and every write names the
+exact location and asks first. Factory banks can never be overwritten.</p>
+
+<h1>2. Installing</h1>
+<ol>
+  <li>Unzip <i>TEO-5-Editor-{{VERSION}}-macOS-Universal.zip</i>.</li>
+  <li>Open <b>Terminal</b>, type <span class="k">bash</span> followed by a space, drag <i>install.command</i> from the
+  unzipped folder into the Terminal window, and press Return.</li>
+  <li>The installer puts the files here, removes older copies, clears the macOS download block and checks that the
+  plug-in loads:
+    <table>
+      <tr><th>File</th><th>Installed to</th></tr>
+      <tr><td>TEO-5 Editor.vst3</td><td>/Library/Audio/Plug-Ins/VST3</td></tr>
+      <tr><td>TEO-5 Editor.component</td><td>/Library/Audio/Plug-Ins/Components (Audio Unit)</td></tr>
+      <tr><td>TEO-5 Editor.app</td><td>/Applications</td></tr>
+    </table>
+  It may ask for your Mac password if one of those folders needs administrator rights.</li>
+  <li>When it says <i>"OK: the VST3 loads"</i>, make your DAW rescan its plug-ins. In Ableton Live: Settings &rarr;
+  Plug-Ins, turn on <i>Use VST3 Plug-In System Folders</i> (and <i>Use Audio Units</i> if you want the AU), then hold
+  Option and click <i>Rescan</i>. If the DAW was open, quit and reopen it.</li>
+</ol>
+<div class="note">The download isn't notarized by Apple, so double-clicking <i>install.command</i> may be blocked.
+Running it from Terminal as above avoids that. Copying the plug-ins by hand keeps the download block on them, and
+DAWs then skip them silently; run the installer instead.</div>
+
+<h1>3. Connecting to the TEO-5</h1>
+<h2>Settings on the TEO-5</h2>
+<p>Press <b>GLOBAL</b> on the TEO-5 and set:</p>
+<ul>
+  <li><b>MIDI Param Send</b> = NRPN and <b>MIDI Param Receive</b> = NRPN</li>
+  <li><b>MIDI SysEx</b> = On, and <b>MIDI SysEx Cable</b> = the connection you use (USB or MIDI)</li>
+  <li><b>MIDI Program Send</b> = On (the TEO-5 only answers requests for programs and settings when it's on)</li>
+</ul>
+<p>Once the editor can reach the synth, the <b>Set up TEO-5&hellip;</b> button in the MIDI drawer can set all of
+these for you.</p>
+
+<h2>Settings in the editor</h2>
+<ol>
+  <li>Click the <b>MIDI</b> tab on the right-hand cheek.</li>
+  <li>Choose the TEO-5 under <b>Input</b> and <b>Output</b>, and the MIDI channel.</li>
+  <li>Click <b>Find TEO-5</b>. The line under the buttons should report the TEO-5 and its OS version.</li>
+  <li>Turn a knob on the TEO-5: the matching knob on the screen moves. Turn <b>CUTOFF</b> on the screen: the synth
+  follows.</li>
+</ol>
+<p>The editor opens the MIDI ports itself rather than relying on the DAW, because many DAWs don't pass SysEx to
+plug-ins. Your port choice is saved with the DAW project (or with the standalone app).</p>
+
+<h2>Sequencer and arpeggiator clock</h2>
+<p>When the TEO-5's <b>MIDI Clock</b> mode is <i>In</i>, <i>In Thru</i> or <i>In No S/S</i>, its arpeggiator and
+sequencer only run while clock arrives. In Ableton Live, open Settings &rarr; Link, Tempo &amp; MIDI and turn on
+<b>Sync</b> for the TEO-5's MIDI output. <b>In No S/S</b> (tempo from Live, Live's Start/Stop ignored) works best with
+the editor: the sequencer's PLAY button then decides whether the sequence runs, and it follows Live's tempo.</p>
+
+<h1>4. The front panel</h1>
+{{shot panel|The front panel. Drawer tabs: LIBRARY, MOD MATRIX and SEQUENCER on the left cheek; GLOBAL, PROGRAM and MIDI on the right.|0|1|0|1|100%}}
+<p>The panel follows the TEO-5's own layout section by section, so everything is where you expect it. The
+TEO-5 User's Guide explains what each control does to the sound; this chapter explains how the controls behave on
+screen.</p>
+
+<h2>Knobs</h2>
+<ul>
+  <li><b>Drag</b> up or down to turn a knob. The whole range takes about 220 pixels.</li>
+  <li>Hold <b>Shift</b> while dragging or scrolling for fine adjustment.</li>
+  <li>The <b>mouse wheel or trackpad</b> also turns knobs.</li>
+  <li><b>Double-click</b> a knob to put it back to the value stored in the loaded program (not a factory default).</li>
+  <li>Right-click a knob for modulation options (chapter 6). Right-clicking never changes a value.</li>
+</ul>
+
+<h2>Buttons and LEDs</h2>
+<p>Buttons toggle on a click and light red when on. Where the TEO-5 uses a button to step through choices
+(LFO shape, LFO 1/2, envelope destinations, arpeggiator octave and repeat), the LEDs next to it show the current
+choice.</p>
+
+<h2>The display (OLED)</h2>
+<ul>
+  <li>The home page shows the program name, with tempo, clock divide, arpeggiator and effect around it, like the
+  synth. When the TEO-5 follows an external clock, it shows <b>EXT BPM</b> with the DAW's tempo.</li>
+  <li>While you turn a control it shows the control's name and its new value, followed in smaller, dimmer text by
+  the value stored in the program, in parentheses. That tells you how far you've moved from the saved sound.</li>
+  <li>The <b>star</b> left of the name is the library's favourite mark for this program (dim if the program isn't in
+  the library).</li>
+  <li><b>Double-click</b> the display to rename the program.</li>
+</ul>
+
+<h2>Sections</h2>
+<table>
+  <tr><th>Section</th><th>Controls</th></tr>
+  <tr><td>MASTER</td><td>VOLUME, OVERDRIVE</td></tr>
+  <tr><td>LFO 1: MONO | LFO 2: POLY</td><td>SYNC, FREQ, SHAPE (LEDs show the shape), DEST, AMOUNT, and the LFO button,
+  which chooses whether these controls edit LFO 1 or LFO 2 (LEDs 1 and 2)</td></tr>
+  <tr><td>MOD</td><td>One button that opens and closes the Mod Matrix drawer</td></tr>
+  <tr><td>SETTINGS</td><td>GLOBAL and PROGRAM open those drawers</td></tr>
+  <tr><td>Display</td><td>BANK &lt; &gt; and PATCH &lt; &gt; underneath step through banks and programs</td></tr>
+  <tr><td>MEMORY</td><td>COMPARE, WRITE (chapter 5)</td></tr>
+  <tr><td>CLOCK</td><td>BPM, CLK DIV, TAP TEMPO</td></tr>
+  <tr><td>ARPEGGIATOR</td><td>ON, OCTAVE, MODE, REPEAT</td></tr>
+  <tr><td>SEQ</td><td>RECORD and PLAY for the TEO-5's step sequencer</td></tr>
+  <tr><td>EFFECT</td><td>ON, TYPE, TIME, DEPTH/MIX, FBACK/MISC, CLK SYNC</td></tr>
+  <tr><td>REVERB</td><td>ON, MIX, SIZE, PREDELAY, DECAY, TONE</td></tr>
+  <tr><td>MISC</td><td>VINTAGE, RATE (glide rate)</td></tr>
+  <tr><td>OSCILLATORS</td><td>FREQUENCY 1, PULSE WIDTH, FREQUENCY 2, waveform buttons for each oscillator,
+  OSC 2 DETUNE</td></tr>
+  <tr><td>OSC MOD</td><td>X-MOD, SYNC</td></tr>
+  <tr><td>FILTER</td><td>RESONANCE, CUTOFF (the large knob), STATE (LP &ndash; notch &ndash; HP; the BP LED shows
+  band-pass), and the OSC 1, SUB, OSC 2 and NOISE source buttons</td></tr>
+  <tr><td>ENVELOPES</td><td>ENV 1 and ENV 2: ATTACK, DECAY, SUSTAIN, RELEASE, AMOUNT, VELOCITY; the buttons on the
+  left choose each envelope's destination (ENV 1 Filter/Aux, ENV 2 Amp/Filter+Amp/Filter+Gate)</td></tr>
+  <tr><td>Bottom row</td><td>GLIDE, UNISON, HOLD, LIBRARY, FACTORY, BANK, the bank/program display, program
+  buttons 1&ndash;16, PANIC, INIT</td></tr>
+</table>
+
+<h2>Special buttons</h2>
+<ul>
+  <li><b>TAP TEMPO</b>: tap at least twice in time; the editor averages the last taps and sets BPM. A pause of two
+  seconds starts a new count.</li>
+  <li><b>LIBRARY</b>: opens the Library drawer (lit while open).</li>
+  <li><b>PANIC</b>: stops hung notes. Sends All Sound Off, All Notes Off, Reset All Controllers and a note-off for
+  every note. The program, sequencer and arpeggiator are left alone.</li>
+  <li><b>INIT</b>: loads the TEO-5's Basic Program into the edit buffer, a clean starting point for a new sound.
+  Nothing is written to memory.</li>
+</ul>
+
+<h1>5. Choosing, comparing and writing programs</h1>
+<h2>Choosing a program</h2>
+<ul>
+  <li><b>Program buttons 1&ndash;16</b> choose a program in the current bank. The display shows bank and program
+  (banks 10&ndash;16 appear as A&ndash;G).</li>
+  <li><b>BANK</b>: press it (it lights), then a program button chooses the bank; press BANK again to go back to
+  choosing programs.</li>
+  <li><b>FACTORY</b> switches between the User banks and the Factory banks.</li>
+  <li><b>BANK &lt; &gt;</b> and <b>PATCH &lt; &gt;</b> under the display step through banks and programs.</li>
+  <li>With no drawer open, the <b>arrow keys</b> do the same: Left/Right step the program, Up/Down the bank.</li>
+</ul>
+<p>Each change sends Bank Select and Program Change to the TEO-5 and then reads the new program, so the panel,
+mod matrix and sequencer all show the sound you're hearing.</p>
+
+<h2>COMPARE</h2>
+<p>Switches between your edited sound and the program as it was loaded, like COMPARE on the synth. Press it again
+to return to your edit.</p>
+
+<h2>WRITE</h2>
+<p>Stores the current sound in the TEO-5's memory. A dialog lets you choose any User bank and program, starting at
+the current location, and names the program the library knows is there:</p>
+{{img library-write-write|Writing to TEO-5 memory: choose the User bank and program, then Overwrite.|48%}}
+<p>Factory locations are never offered. Until you WRITE, all edits live only in the edit buffer, and changing
+program discards them (the library and DAW project can still keep them).</p>
+
+<h1>6. Modulation from the panel (right-click)</h1>
+<p>Right-click any knob or button that the TEO-5 can modulate (for example CUTOFF, the LFO rates and amounts, effect
+and reverb controls, oscillator frequencies, envelope stages, or the OSC 1, SUB, OSC 2 and NOISE levels). The menu
+offers:</p>
+<ul>
+  <li><b>Modulate &lt;control&gt; from &#9656;</b> every modulation source (LFOs, envelopes, velocity, mod wheel,
+  pressure, random and so on).</li>
+  <li><b>Already modulated by</b>: the mod slots that already route to this control; choose one to jump to it.</li>
+  <li>For the controls of a source (LFO, ENV 1, ENV 2, OSC 2, NOISE): <b>Send &lt;source&gt; to &#9656;</b> every
+  destination, grouped by section.</li>
+</ul>
+<p>Choosing an entry fills the first free mod slot, opens the Mod Matrix drawer and outlines the new slot in amber.
+The new slot starts with an amount of zero, so nothing changes until you drag its amount. The outline goes away when
+you edit another slot or close the drawer.</p>
+{{shot modmatrix-assign|A slot added from the right-click menu, outlined and ready for its amount.|0|0.327|0|1|66%}}
+<p>If all 16 slots are in use, the menu says so. Controls that the TEO-5 can't modulate have no menu.</p>
+
+<h1>7. The Library drawer</h1>
+<p>Open it with the <b>LIBRARY</b> tab on the left cheek or the LIBRARY button on the panel.</p>
+{{shot library|The library: TEO-5 banks on the left, your own banks (MY BANKS) on the right.|0.009|0.5375|0|1|100%}}
+
+<h2>Two panes</h2>
+<ul>
+  <li><b>TEO-5</b> (left): copies of the synth's User and Factory banks, fetched from the TEO-5. A User bank always
+  has 16 slots, matching the synth.</li>
+  <li><b>MY BANKS</b> (right): your own collections: imported <i>.syx</i> files and banks you make. They hold any
+  number of programs.</li>
+</ul>
+<p>Banks start collapsed; click the arrow to open one. Drag a bank's name to reorder banks within a pane.
+Double-click a bank's name to rename it.</p>
+
+<h2>Buttons</h2>
+<table>
+  <tr><td>Fetch</td><td>Reads from the TEO-5: the edit buffer, the current bank, or all User/Factory banks (with a
+  progress bar). Fetching a bank again replaces the earlier copy.</td></tr>
+  <tr><td>Import</td><td>Adds <i>.syx</i> files (single programs or banks). You can also drop files from Finder.</td></tr>
+  <tr><td>+ Current</td><td>Saves the sound on the panel into the selected bank.</td></tr>
+  <tr><td>+ Bank</td><td>Makes a new empty bank in MY BANKS.</td></tr>
+  <tr><td>Undo / Redo</td><td>Undoes any library change (also Cmd+Z / Shift+Cmd+Z). The status line names what was
+  undone.</td></tr>
+  <tr><td>TEO-5 &rarr; Library</td><td>Fetches all 16 User banks (warns first if the library has changes not yet
+  sent).</td></tr>
+  <tr><td>Library &rarr; TEO-5</td><td>Writes the library's User banks to the synth: only the changed slots, or every
+  slot. It lists what will be written and asks first.</td></tr>
+  <tr><td>Search / Favourites</td><td>Search matches names, sources and tags; <span class="k">tag:pad</span> searches
+  tags only. Favourites shows only starred programs.</td></tr>
+</table>
+
+<h2>Programs</h2>
+<ul>
+  <li><b>Click</b> a program to load it into the TEO-5's edit buffer and hear it. (Shift-click and Cmd-click only
+  select.)</li>
+  <li>The icons on each row: <b>star</b> (favourite), <b>write to TEO-5 memory</b>, <b>export .syx</b>,
+  <b>rename</b>, <b>delete</b>. Factory programs show only the star, write and export.</li>
+  <li><b>Right-click</b> a program for more: load, write, rename, tags, favourite, copy, paste, duplicate, export,
+  delete. Right-click a bank to rename, import, export, send it to the TEO-5, fetch it again, or delete it.</li>
+  <li>Tags appear on the right of the row; give a program several tags (for example <i>pad, ambient</i>).</li>
+  <li>Cmd+C, Cmd+V and Delete work on the selection. Every delete asks first.</li>
+</ul>
+
+<h2>Dragging</h2>
+<ul>
+  <li>Dropping a program onto another program in the same TEO-5 User banks, or within one of your banks,
+  <b>swaps</b> them.</li>
+  <li>Dragging between two of your banks moves the program; dragging out of a Factory bank copies it.</li>
+  <li>Hold <b>Option</b> while dragging to copy instead of moving.</li>
+</ul>
+
+<h2>NOT SENT and Empty</h2>
+<p>Changes to the TEO-5 User banks in the library aren't on the synth until you send them. Such slots are marked
+<b>NOT SENT</b> in red, and the bank header counts them. Deleting a program from a User bank leaves an <b>Empty</b>
+slot; when you send the bank, the editor writes the TEO-5's Basic Program there. Use <b>Library &rarr; TEO-5</b>,
+<i>Send bank</i> or the row's write icon to send.</p>
+<div class="tip">Factory banks are read-only: they can't be renamed, deleted, pasted into or written to.</div>
+
+<h2>Where the library is kept</h2>
+<p>In <i>~/Documents/TEO5Editor/Library</i>: <i>library.json</i> holds the banks, names, tags and favourites, and
+<i>programs/</i> holds each program as a standard <i>.syx</i> file that other SysEx librarians can read. Back up
+this folder to keep your library safe.</p>
+
+<h1>8. The Mod Matrix drawer</h1>
+<p>Open it with the <b>MOD MATRIX</b> tab on the left cheek or the <b>MOD</b> button on the panel. It shows all 16 of
+the program's modulation slots at once.</p>
+{{shot modmatrix|All 16 mod slots: LED, source, amount and destination.|0|0.327|0|1|66%}}
+<ul>
+  <li><b>Source</b> and <b>Destination</b>: choose from the drop-downs. The destinations are grouped by section
+  (oscillators, filter, effects, LFOs, envelopes, voice, and other slots' amounts).</li>
+  <li><b>Amount</b>: drag the bar left or right (from &minus;127 to +127, zero in the centre), or use the mouse
+  wheel. Double-click restores the amount stored in the program.</li>
+  <li><b>LED</b>: click to turn a slot off and on again. Off sets the amount to zero and remembers it (the slot
+  shows OFF with a dashed outline). The TEO-5 has no per-slot switch, so a slot written while off is stored with
+  zero.</li>
+  <li><b>Right-click</b> a slot or its amount: <i>Clear amount</i>, <i>Clear slot</i>, or <i>Restore slot to patch
+  default</i> (its stored source, amount and destination).</li>
+  <li><b>Undo / Redo</b> (top right) step through your changes in the drawer; the hint line says what was undone.
+  The history starts over when you change program.</li>
+</ul>
+<p>The header counts the active slots. Changes are sent to the edit buffer as you make them.</p>
+
+<h1>9. The Sequencer drawer</h1>
+<p>The TEO-5 stores a step sequence in every program: up to 64 steps, each playing up to five notes. Open the
+editor with the <b>SEQUENCER</b> tab on the left cheek. It shows the sequence of the sound in the edit buffer and
+changes it there; nothing is stored until you WRITE. The <b>?</b> button left of the title opens a full guide.</p>
+{{shot sequencer|The sequencer: two blocks of 32 steps with five note lanes, then the step panel, transpose and keyboard.|0.009|0.698|0|1|100%}}
+
+<h2>At the top</h2>
+<ul>
+  <li><b>Bank drop-down</b> and <b>&#9664; PATCH &#9654;</b>: choose a TEO-5 bank (User or Factory) or one of your
+  library banks, then step through its programs. PATCH stays within the chosen bank.</li>
+  <li><b>LENGTH &minus; / +</b>: the number of steps (1&ndash;64). You can also drag along the step numbers.</li>
+  <li><b>PLAY</b>: starts and stops the TEO-5's sequencer. With the synth's clock on <i>In No S/S</i>, the sequence
+  runs while Live plays; PLAY turns amber and says <i>Waiting for Live</i> until then. Every Live start restarts the
+  sequence at step 1.</li>
+  <li><b>REC</b>: step entry (see Recording below). <b>STEP</b> shows the current step and the length.</li>
+  <li><b>From TEO-5</b> reads the sequence on the synth (also done each time the drawer opens). <b>Reset</b> puts
+  back the sequence stored in the program. <b>Undo / Redo</b> step through your changes.</li>
+</ul>
+
+<h2>Steps</h2>
+<ul>
+  <li>A note has a blue bar under it; a <b>green</b> bar is a note held (tied) from the step before; a hatched step
+  is a <b>REST</b>.</li>
+  <li>Click a step's number to select it and hear its notes while you hold the mouse. Click a note to select just that
+  note. Shift-click selects a range; Cmd-click adds or removes steps.</li>
+  <li><b>Right-click</b> steps to <i>Copy</i>, <i>Paste</i> (also into another program), <i>Clear step</i> or
+  <i>Clear all sequencer data</i>.</li>
+  <li>While the sequence plays, the lit step number follows the playhead.</li>
+</ul>
+
+<h2>Step panel, transpose and keyboard</h2>
+<ul>
+  <li><b>PLAY / REST / TIE</b> set what the selected step does. Each note has a velocity slider (you hear it as you
+  drag), <b>MUTE</b> and <b>&times;</b> (remove).</li>
+  <li><b>Transpose</b> moves notes by a semitone or an octave, for all steps or only the selected ones. It's off
+  while the sequence plays.</li>
+  <li><b>Keyboard</b>: click a key to add that note to the selected step (or replace the selected note).
+  <b>OCT &minus; / OCT +</b> shift the range.</li>
+</ul>
+
+<h2>Recording</h2>
+<ul>
+  <li>Press <b>REC</b>. The amber box marks the step being recorded; each key you play goes in and the box moves on.
+  Keys can come from the on-screen keyboard, the DAW track, or the TEO-5's own keys.</li>
+  <li><b>CHORD</b> stacks keys on one step (up to five); <b>NEXT</b> moves on. <b>REST</b> and <b>TIE</b> enter a
+  rest or a held step. <b>&#9664; BACK / NEXT &#9654;</b> move without entering anything.</li>
+  <li>You can record while the sequence plays; notes the sequencer itself plays are recognised and not entered.</li>
+  <li>Recording with the TEO-5's own RECORD button also works: the editor clears the sequence when RECORD goes on (as
+  the synth starts again from step 1) and fills in the steps live as you play. The whole pass is one undo step. The
+  editor's REC and the synth's RECORD never run together.</li>
+</ul>
+<div class="note">The TEO-5 stops its sequencer whenever it receives a new edit buffer. So while the sequence plays,
+the editor sends your changes as the loop starts over and restarts playback at step 1; you hear them from the next
+pass.</div>
+
+<h1>10. The GLOBAL drawer</h1>
+<p>The <b>GLOBAL</b> button on the panel or the GLOBAL tab on the right cheek opens the TEO-5's global settings, in
+the same order as the synth's GLOBAL menu: tuning, playing (local control, mono/stereo, pot mode, pedals,
+aftertouch and velocity curves, alternative tunings), MIDI (channel, clock mode and cables, parameter send and
+receive, SysEx, program send) and more.</p>
+{{shot global|The GLOBAL drawer reads the synth's settings each time it opens.|0.7675|0.9875|0|1|46%}}
+<ul>
+  <li>The drawer reads the settings from the TEO-5 each time it opens (<b>Read from TEO-5</b> reads them again).</li>
+  <li>Each change is sent to the synth at once. Settings that could cut the connection (MIDI channel, parameter
+  receive, SysEx and so on) ask first.</li>
+  <li>Global settings belong to the synth, not to a program or a DAW project.</li>
+</ul>
+
+<h1>11. The PROGRAM drawer</h1>
+<p>The <b>PROGRAM</b> button or tab lists the program settings that have no knob on the panel, grouped by section:
+oscillator key tracking, detune, pulse widths and glide, oscillator and noise levels, noise type, filter key amount
+and band-pass, envelope options, voice settings, tunings and more.</p>
+{{shot program|The PROGRAM drawer: settings without a panel knob.|0.7675|0.9875|0|1|46%}}
+<ul>
+  <li>Drag a value bar, choose from a drop-down or tick a box. Changes go to the edit buffer at once and are kept when
+  you WRITE.</li>
+  <li>Tick <b>Also list settings that have a panel knob</b> at the bottom to see every program setting in one list.</li>
+</ul>
+
+<h1>12. The MIDI drawer</h1>
+<p>The <b>MIDI</b> tab at the bottom of the right cheek holds the connection settings and tools.</p>
+{{shot drawer|The MIDI drawer (the message monitor below it is not shown).|0.7915|0.9875|0|0.53|46%}}
+<table>
+  <tr><td>Input / Output</td><td>The TEO-5's MIDI ports.</td></tr>
+  <tr><td>Channel</td><td>The TEO-5's MIDI channel.</td></tr>
+  <tr><td>Send as</td><td>NRPN (recommended) or CC, matching the synth's MIDI Param Send/Receive.</td></tr>
+  <tr><td>Fetch edit buffer on program change</td><td>Read each new program from the synth (keep this on).</td></tr>
+  <tr><td>Play the TEO-5 from the DAW track</td><td>Notes, pitch bend, mod wheel, aftertouch and pedals played into
+  the editor's track go to the TEO-5.</td></tr>
+  <tr><td>Rescan</td><td>Looks for MIDI ports again (after plugging something in).</td></tr>
+  <tr><td>Find TEO-5</td><td>Asks the synth to identify itself; the status line shows the result.</td></tr>
+  <tr><td>Set up TEO-5&hellip;</td><td>Sets the TEO-5's MIDI globals for the editor (asks first; programs are
+  untouched).</td></tr>
+  <tr><td>Receive / Send edit buffer</td><td>Reads the current sound from the synth, or sends the editor's sound to
+  it.</td></tr>
+  <tr><td>Send all parameters</td><td>Sends every panel value as individual messages.</td></tr>
+  <tr><td>Send test note</td><td>Plays middle C on the TEO-5, to check the connection.</td></tr>
+  <tr><td>Monitor</td><td>Lists every message sent and received; <b>Clear</b> empties it.</td></tr>
+</table>
+<p>The line under the buttons shows the connection status and the TEO-5's OS version once it has been found.</p>
+
+<h1>13. Using TEO-5 Editor in a DAW</h1>
+<ul>
+  <li>Add TEO-5 Editor (VST3 or AU) to a <b>MIDI track</b> as an instrument. Play the TEO-5 from that track with
+  <i>Play the TEO-5 from the DAW track</i> on, or play the synth directly.</li>
+  <li><b>Projects remember the sound.</b> When you save, the project stores the program, including its sequence.
+  When you open the project again, the editor sends that sound to the TEO-5's edit buffer about half a second later
+  (it never writes memory).</li>
+  <li>A new instance on a fresh track reads whatever sound is on the synth.</li>
+  <li><b>Live's transport and the sequencer:</b> with PLAY on in the sequencer, each Live start restarts the sequence
+  at step 1 and Live's stop stops it.</li>
+  <li><b>Recording the sequencer into Live:</b> turn on <i>MIDI Arp Notes</i> in the GLOBAL drawer, make a MIDI track
+  with <i>MIDI From</i> = the TEO-5, <i>MIDI To</i> = No Output and Monitor Off, arm it and record while the sequence
+  plays.</li>
+</ul>
+
+<h1>14. Troubleshooting</h1>
+<h2>The synth doesn't respond to the editor</h2>
+<ul>
+  <li>Click <b>Send test note</b> in the MIDI drawer. If you don't hear middle C, check the Output port and channel.
+  The monitor shows <i>OUT (no port!)</i> when no output is chosen.</li>
+  <li>Click <b>Find TEO-5</b>. The monitor should show a SysEx message going out and one coming back. If nothing comes
+  back, check the Input port and the TEO-5's MIDI SysEx and SysEx Cable settings.</li>
+  <li>Knobs on the synth don't move the screen: set the TEO-5's MIDI Param Send to NRPN.</li>
+  <li>Programs or settings don't load: set the TEO-5's <b>MIDI Program Send</b> to On. It can switch off after a power
+  cycle.</li>
+</ul>
+<h2>The sequencer or arpeggiator doesn't run</h2>
+<p>With the TEO-5's clock mode on <i>In</i>, <i>In Thru</i> or <i>In No S/S</i>, it needs MIDI clock. Turn on Sync
+for the TEO-5's output in your DAW (chapter 3). The sequencer drawer warns in amber when the clock mode is set so that
+Live's transport would start it.</p>
+<h2>Stuck notes</h2>
+<p>Press <b>PANIC</b>.</p>
+<h2>The plug-in doesn't show up in the DAW</h2>
+<ul>
+  <li>Run <i>install.command</i> again. If it ends with <i>"OK: the VST3 loads"</i>, the plug-in is fine and the DAW
+  only needs to rescan.</li>
+  <li>Ableton Live: Settings &rarr; Plug-Ins, turn on <i>Use VST3 Plug-In System Folders</i> (and <i>Use Audio
+  Units</i> for the AU), hold Option and click Rescan.</li>
+  <li>Bitwig: Settings &rarr; Plug-ins &rarr; Rescan; re-enable TEO-5 Editor if it's listed as failed or blocked.</li>
+</ul>
+
+<h1>15. Quick reference</h1>
+<table>
+  <tr><th>Action</th><th>How</th></tr>
+  <tr><td>Fine adjustment</td><td>Shift + drag or scroll</td></tr>
+  <tr><td>Back to the stored value</td><td>Double-click a knob or mod amount</td></tr>
+  <tr><td>Add modulation</td><td>Right-click a knob or button</td></tr>
+  <tr><td>Next / previous program</td><td>Right / Left arrow (no drawer open), or PATCH &lt; &gt;</td></tr>
+  <tr><td>Next / previous bank</td><td>Up / Down arrow (no drawer open), or BANK &lt; &gt;</td></tr>
+  <tr><td>Rename the program</td><td>Double-click the display</td></tr>
+  <tr><td>Hear a library program</td><td>Click it</td></tr>
+  <tr><td>Copy while dragging</td><td>Option + drag</td></tr>
+  <tr><td>Undo / Redo (library)</td><td>Cmd+Z / Shift+Cmd+Z</td></tr>
+  <tr><td>Stop hung notes</td><td>PANIC</td></tr>
+  <tr><td>Start a sound from scratch</td><td>INIT</td></tr>
+  <tr><td>Store in the TEO-5</td><td>WRITE, then choose a User location</td></tr>
+</table>
+<p style="margin-top:18pt;font-size:9pt;color:#666">TEO-5 Editor is free software: you can redistribute it and/or
+modify it under the terms of the GNU Affero General Public License, version 3 or later. It comes with no warranty.
+Source code and releases: github.com/jwalkermed/Teo-5-Editor. Third-party software is listed in
+THIRD-PARTY-NOTICES.md.</p>

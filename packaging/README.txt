@@ -4,6 +4,7 @@ Apple Silicon and Intel Macs (universal binary), macOS 11 or later.
 Copyright (C) 2026 The TEO-5 Editor project. Free software under the GNU Affero General Public License v3
 or later, WITHOUT ANY WARRANTY; see LICENSE.txt. Third-party software: see THIRD-PARTY-NOTICES.md.
 Source code: https://github.com/jwalkermed/Teo-5-Editor
+The full manual is TEO-5-Editor-Users-Guide.pdf in this folder.
 
 INSTALL
   Open Terminal, then type "bash " (with a space) and drag install.command into the window. Press Return:
@@ -21,13 +22,11 @@ INSTALL
 
 FIRST RUN WITH THE TEO-5
   1. TEO-5: GLOBAL > MIDI Param Send = NRPN, MIDI Param Receive = NRPN, MIDI SysEx = On,
-     MIDI SysEx Cable = USB.
+     MIDI SysEx Cable = the connection you use, MIDI Program Send = On.
   2. Open TEO-5 Editor (standalone is simplest for a first test). Click the MIDI tab on the right end cheek,
      choose the TEO-5 as input and output, then click "Find TEO-5".
   3. Turn a knob on the synth: the matching knob on screen should move. Turn Cutoff on screen: the synth follows.
-  4. Select a scratch program on the TEO-5, then click "Map dump layout..." (a few minutes; nothing is written
-     to memory). Then type the program name exactly as the OLED shows it and click "Locate name".
-  5. LIBRARY tab (left end cheek): Fetch > Bank 1, then double-click a program to load it.
+  4. LIBRARY tab (left end cheek): Fetch > Bank 1, then click a program to load it.
   Don't use WRITE or "Send bank" until the steps above work, and try them on a scratch slot first.
 
 IF THE SYNTH DOESN'T RESPOND TO THE EDITOR

@@ -7,6 +7,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 cmake --build build --config Release --target TEO5Editor_VST3 TEO5Editor_AU TEO5Editor_Standalone TEO5PluginCheck
+packaging/make-manual.sh
 
 ART=build/TEO5Editor_artefacts/Release
 STAGE=dist/TEO5Editor
@@ -22,6 +23,7 @@ for b in "$STAGE/$NAME".* "$STAGE/TEO5PluginCheck"; do
 done
 cp packaging/install.command packaging/README.txt THIRD-PARTY-NOTICES.md "$STAGE/"
 cp LICENSE "$STAGE/LICENSE.txt"
+cp build/manual/TEO-5-Editor-Users-Guide.pdf "$STAGE/"
 chmod +x "$STAGE/install.command"
 # No resource forks / extended attributes: some unzip tools turn them into "._*" files inside the bundles,
 # which breaks the code signature and makes DAWs reject the VST3.
