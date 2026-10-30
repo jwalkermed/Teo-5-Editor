@@ -1,0 +1,702 @@
+=====PAGE 1
+1
+TEO-5 User’s GuideTEO-5 MIDI Implementation
+TEO-5 MIDI Implementation
+The TEO-5 receives MIDI data according to the settings you have 
+chosen in globals. In addition, there is interaction between some of 
+the program parameters that determine the overall response of TEO-5 
+to MIDI data. These are the globals parameters that affect response to 
+MIDI:
+MIDI Channel: All, 1…16—Selects which MIDI channel to send and 
+receive data, 1 to 16. All receives on all 16 channels.
+MIDI Clock Mode: Sets the TEO-5’s ability to send and receive MIDI 
+clock messages:
+• Off: MIDI Clock is neither sent nor received
+• Out: MIDI Clock + Start and Stop are sent
+• Out No S/S (No Start and Stop): Sends MIDI clock, but no Start or 
+Stop Commands
+• In: MIDI Clock is received
+• In/Thru: MIDI Clock is received and routed to Thru jack 
+• In No S/S: Receives MIDI Clock but does not respond to MIDI Start 
+or Stop command.
+When set to in or in/thru, if no MIDI clock is present at the selected 
+input, the arpeggiator and sequencer will not function.
+MIDI Clock Cable In: MIDI, USB—Sets the port, MIDI or USB, by 
+which MIDI clock signals are received.
+MIDI Clock Cable Out: None, MIDI, USB, All—Sets the port, MIDI, 
+USB, or both, by which MIDI clock signals are sent.
+MIDI Param Send: Off, CC, NRPN—Changes to the values of front panel 
+controls are transmitted via MIDI as Continuous Controllers (CC) or 
+Non-Registered Parameter Number (NRPN). Transmission of parameters 
+can also be turned off.
+=====PAGE 2
+2 TEO-5 MIDI Implementation
+Oberheim
+MIDI Param Receive: Off, CC, NRPN—Sets the method by which parameter 
+changes are received via MIDI. As with transmission, NRPNs are the preferred 
+method.
+MIDI Control: Off, On—When set to On, the synth will respond to MIDI 
+controllers, including pitch wheel, mod wheel, pedal, and volume.
+MIDI Sysex On: Off, On—When set to On, the synth will respond to 
+MIDI controllers, including pitch wheel, mod wheel, pedal, and volume.
+MIDI SysEx Cable: MIDI, USB—When set to MIDI it will receive and 
+transmit MIDI SysEx messages using the MIDI ports/cables When set to 
+USB it will receive and transmit MIDI SysEx messages using the USB 
+port/cable. MIDI SysEx messages are used when sending and receiving a 
+variety of data including, programs, alternative tunings, system updates, 
+and more.
+MIDI Out Select: Off, MIDI, USB, All—Sets the port by which MIDI data 
+will be transmitted.  
+MIDI Prog Send: Off, On—When set to On, the synth will send MIDI 
+Program Change messages. 
+MIDI Prog Receive: Off, On—When set to On, the synth will respond to 
+MIDI Program Change messages. 
+=====PAGE 3
+3
+TEO-5 User’s GuideTEO-5 MIDI Implementation
+MIDI Messages
+System Real-Time Messages
+Status Description
+1111 1000 MIDI Timing Clock 
+Received Channel Messages
+Status Second Third Description
+1000 nnnn 0kkkkkkk 0vvvvvvv Note Off. Velocity is ignored
+1001 nnnn 0kkkkkkk 0vvvvvvv Note On. Note off if vvvvvvv = 0
+1010 nnnn 0kkkkkkk 0vvvvvvv Polyphonic Key Pressure
+1011 nnnn 0vvvvvvv 0vvvvvvv Control Change; see “Received Controller Messages”
+1100 nnnn 0ppppppp Program change, 0-127 for Programs 1-127 within 
+current Bank
+1101 nnnn 0vvvvvvv Channel Pressure
+1110 nnnn 0vvvvvvv 0vvvvvvv Pitch Bend LS Byte then MS Byte
+Notes: 0kkkkkkk Note number 0-127 
+ nnnn Channel number 0 to 15 (MIDI channel 1-16).  
+   Ignored if MIDI channel set to ALL 
+ 0vvvvvvv  Value
+Received Controller Messages
+Status Second Third Description
+1011 nnnn 0000 0001 0vvvvvvv Mod Wheel: directly assignable controller
+1011 nnnn 0000 0100 0vvvvvvv Foot Controller: directly assignable controller
+1011 nnnn 0000 0111 0vvvvvvv Volume: Combined with Master Volume and Program 
+Volume
+1011 nnnn 0100 1010 0vvvvvvv Brightness: Offset added to filter cutoff frequency
+1011 nnnn 0010 0000 0vvvvvvv Bank Select: 1 - 4 select user banks 1 - 4; 5 - 8 select 
+factory banks 1 - 4; 9 - 12 select add-on banks 1 - 4 
+others ignored
+1011 nnnn 0100 0000 0vvvvvvv Damper pedal: Holds envelopes in Sustain if 0100 0000 
+or higher
+1011 nnnn 0111 1011 0vvvvvvv All Notes Off: Clear all MIDI notes
+1011 nnnn 0111 1001 0vvvvvvv Reset All Controllers: Clears all MIDI controllers to 0, 
+MIDI volume to maximum
+See subsequent sections for additional Continuous Controller (CC) and 
+Non-Registered Parameter Number (NRPN) messages received.
+=====PAGE 4
+4 TEO-5 MIDI Implementation
+Oberheim
+Transmitted Channel Messages 
+Status Second Third Description
+1000 nnnn 0kkkkkkk 0000000 Note Off. 
+1001 nnnn 0kkkkkkk 0vvvvvvv Note On. 
+1011 nnnn 0vvvvvvv 0vvvvvvv Control Change; see “Transmitted Controller Messages”
+1100 nnnn 0ppppppp Program change, 0-127 for Programs 00-128 within 
+current Bank
+1101 nnnn 0vvvvvvv Channel Pressure
+1110 nnnn 0vvvvvvv 0vvvvvvv Pitch Bend LS Byte then MS Byte
+Notes: 0kkkkkkk Note number 0 — 127 
+ nnnn Channel number 0 to 15 (MIDI channel 1-16).  
+   Ignored if MIDI channel set to ALL 
+ 0vvvvvvv  Value
+Transmitted Controller Messages
+Status Second Third Description
+1011 nnnn 0000 0001 0vvvvvvv Mod Wheel
+1011 nnnn 0000 0010 0vvvvvvv Breath Controller: When assigned to Pedal/CV
+1011 nnnn 0000 0100 0vvvvvvv Foot Controller: When assigned to Pedal/CV
+1011 nnnn 0000 1101 0vvvvvvv Expression: When assigned to Pedal/CV
+1011 nnnn 0000 0111 0vvvvvvv Volume: When assigned to Pedal/CV
+1011 nnnn 0100 1010 0vvvvvvv Brightness: Assigned to Pedal/CV
+1011 nnnn 0010 0000 0vvvvvvv Bank Select: 0 - 9
+1011 nnnn 0100 0000 0vvvvvvv Damper pedal: Sends 0 if off, 0111 1111 when 
+on
+1011 nnnn 0000 0111 0vvvvvvv Volume knob
+See sections that follow for additional Continuous Controller (CC) and 
+Non-Registered Parameter Number (NRPN) messages transmitted.
+=====PAGE 5
+5
+TEO-5 User’s GuideTEO-5 MIDI Implementation
+Additional Continuous Controllers Transmitted/Received
+The following table details how MIDI Continuous Controllers (CCs) are 
+mapped to Pro 3 controls. They are transmitted when MIDI Param Send is set to 
+CC, and recognized/received when MIDI Param Receive is set to CC.
+CC# Param Range
+0 Bank Select MSB 0-15
+1 Mod Wheel 0-127
+2 Breath Controller 0-127
+3 BPM 15-127
+4 Foot Controller 0-127
+5 Glide Mode (Porta-
+mento Time)
+0-3
+6 Data Entry MSB
+7 Master Volume 0-127
+8 Osc 1 Freq 0-63
+9 Osc 1 On 0-1
+10 Osc 2 On 0-1
+11 Expression 0-127
+12 Voice Volume 0-127
+13 Osc 2 Freq 0-63
+14 Sub On 0-1
+15 Noise On 0-1
+16 FX On/Off 0-1
+17 FX Select 0-12
+18 FX Time 0-127
+19 FX Mix 0-127
+20 FX Misc 0-127
+21 FX Sync On/Off 0-1
+22 FX Sync Rate 0-10
+23 Reverb On 0-1
+24 Reverb Mix 0-127
+25 Reverb Size 0-127
+26 Reverb PreDelay 0-127
+27 Reverb Decay 0-127
+28 Reverb Tone 0-127
+29 Key Split 0-1
+30 Key Split 2 0-1
+CC# Param Range
+31 Unison On 0-1
+32 Bank Select LSB
+33 Filter Cutoff 0-127
+34 Filter Resonance 0-127
+35 Filter State 0-127
+36 Filter Key Amt 0-127
+37 Vintage Amt 0-127
+38 Data Entry LSB
+39 Osc 1 Sync 0-1
+40 Osc 1 Level 0-127
+41 Osc 2 Level 0-127
+42 Sub Level 0-127
+43 Noise Level 0-127
+44 X-Mod Amt 0-127
+45 Env 1 Delay 0-127
+46 Env 1 Attack 0-127
+47 Env 1 Decay 0-127
+48 Env 1 Sustain 0-127
+49 Env 1 Release 0-127
+50 Env 1 Amount 0-127
+51 Env 1 Vel On 0-1
+52 Env 2 Delay 0-127
+53 Env 2 Attack 0-127
+54 Env 2 Decay 0-127
+55 Env 2 Sustain 0-127
+56 Env 2 Release 0-127
+57 Env 2 Amount 0-127
+58 Env 2 Vel On 0-1
+59 Arp. On 0-1
+60 Arp. Mode 0-4
+61 Arp. Range 0-2
+62 Arp Repeat 0-3
+=====PAGE 6
+6 TEO-5 MIDI Implementation
+Oberheim
+CC# Param Range
+63 Clock Divide 0-7
+64 Sustain Pedal 0-127
+65 Osc 1 Glide 0-127
+66 Osc 2 Glide 0-127
+67 Distortion 0-127
+68 Glide On 0-1
+69 Env Rout 0-2
+70 Unison Voices 0-5
+71 Unison Detune 0-7
+72 Key Mode 0-2
+73 Env Retrig 0-1
+74 Brightness 0-127
+75 LFO 1 Freq 0-127
+76 LFO 1 Amt 0-127
+77 LFO 1 Shape 0-4
+78 LFO 1 Sync 0-1
+79 LFO 1 Note Reset 0-1
+80 LFO 2 Freq 0-127
+81 LFO 2 Amt 0-127
+82 LFO 2 Shape 0-4
+83 LFO 2 Sync 0-1
+84 LFO 2 Note Reset 0-1
+85 PBend Range Up 0-12
+86 PBend Range Dn 0-24
+87 Osc 1 Key On 0-1
+88 Osc 2 Key On 0-1
+89 KeySplit Note 0-43
+90 Seq On/Off 0-1
+91 Seq Rec Arm 0-1
+92 LFO 1 Slew 0-127
+93 LFO 2 Slew 0-127
+94 Osc 1 PW 0-127
+CC# Param Range
+95 Osc 2 PW 0-127
+96 Data Inc
+97 Data Dec
+98 NRPN Param LSB
+99 NRPN Param MSB
+100 RPN Param LSB
+101 RPN Param MSB
+102 Osc 1 Tri 0-1
+103 Osc 2 Tri 0-1
+104 Osc 1 Saw 0-1
+105 Osc 2 Saw 0-1
+106 Osc 1 Pulse 0-1
+107 Osc 2 Pulse 0-1
+108 Noise Type 0-1
+109 Osc 2 Detune 0-63
+110 Filter Bandpass 0-1
+111 LFO 1 Freq Sync 0-15
+112 LFO 2 Freq Sync 0-15
+113 Pan 0-127
+114 Scale Select 0-65
+115 Transpose 0-4
+116 Env Repeat 0-3
+117 Osc 2 Filter Bypass 0-1
+118 Unassigned
+119 Unassigned
+120 All Sound Off
+121 Reset Controllers
+122 Local Control On/Off
+123 All Notes Off
+124 Omni Mode Off
+125 Omni Mode On
+126 Mono Mode On
+127 Poly Mode On
+=====PAGE 7
+7
+TEO-5 User’s GuideTEO-5 MIDI Implementation
+NRPN Messages
+The Non-Registered Parameter Number (NRPN) MIDI messages are 
+used to transmit and receive both global and program parameters. They 
+are transmitted when MIDI Parameter Send is set to NRPN in globals, 
+and received when MIDI Parameter Receive is set to NRPN in globals.
+The messages are handled in standard MIDI format using the NRPN CC 
+commands in running status byte format. Below is the format used for 
+transmitting a NRPN parameter.
+Transmitted NRPN Messages
+Status Description
+1011 nnnn Control Change
+0110 0011 NRPN parameter number MSB CC
+0vvv vvvv Parameter Number MSB 
+0110 0010 NRPN parameter number LSB CC
+0vvv vvvv Parameter Number LSB 
+0000 0110 NRPN parameter value MSB CC
+0vvv vvvv Parameter value MSB 
+0010 0110 NRPN parameter value LSB CC
+0vvv vvvv Parameter value LSB 
+The parameter number can be found in the two tables below, one for 
+global parameters, and the other for program parameters. The parameter 
+numbers and the parameter values are broken into two 7-bit bytes for 
+MIDI transmission; the LSB has the seven least-significant bits, and the 
+MSB has the seven most-significant bits, though in most cases the MSB 
+will be zero or one, and never more than two.
+When receiving an NRPN, all messages do not necessarily need to be 
+transmitted, since the synth will track the most recent NRPN number, 
+though it is usually good practice to send the entire message above.
+Once an NRPN is selected, the synth will also respond to NRPN Data 
+Increment and Decrement commands, which some controllers utilize. 
+Finally, it responds to one RPN (Registered Parameter Number) 
+command, the RPN/NRPN Reset command, which can be handy for 
+resetting the currently selected parameter to a known state.
+=====PAGE 8
+8 TEO-5 MIDI Implementation
+Oberheim
+Received NRPN Messages
+Status Second Third Description
+1011 nnnn 0110 0011 0vvvvvvv NRPN parameter number MSB CC
+1011 nnnn 0110 0010 0vvvvvvv NRPN parameter number LSB CC
+1011 nnnn 0000 0110 0vvvvvvv NRPN parameter value MSB CC
+1011 nnnn 0010 0110 0vvvvvvv NRPN parameter value LSB CC
+1011 nnnn 0110 0000 0xxxxxxx NRPN parameter value Increment
+1011 nnnn 0110 0001 0xxxxxxx NRPN parameter value Decrement
+1011 nnnn 0010 0101 0111111 RPN parameter number MSB CC - Reset NRPN param-
+eter number (when both MSB and LSB received)
+1011 nnnn 0010 0100 0111111 RPN parameter number LSB CC - Reset NRPN param-
+eter number (when both MSB and LSB received)
+Program Parameter Data
+The following table lists TEO-5 program parameters 0-352. 
+NRPN# Param Range
+1 Osc 1 Freq 0-63
+2 Osc 2 Freq 0-63
+3 Osc 1 Detune 0-63
+4 Osc 2 Detune 0-63
+5 Osc 1 PW 0-127
+6 Osc 2 PW 0-127
+7 Osc 1 Tri 0-1
+8 Osc 2 Tri 0-1
+9 Osc 1 Saw 0-1
+10 Osc 2 Saw 0-1
+11 Osc 1 Pulse 0-1
+12 Osc 2 Pulse 0-1
+13 Osc 1 On 0-1
+14 Osc 2 On 0-1
+15 Osc 1 Level 0-127
+16 Osc 2 Level 0-127
+17 Sub Osc On 0-1
+18 Sub Osc Level 0-127
+19 Noise On 0-1
+20 Noise Type 0-127
+NRPN# Param Range
+21 Noise Level 0-127
+22 Osc 1 Glide 0-127
+23 Osc 2 Glide 0-127
+24 Osc 1 Key On 0-1
+25 Osc 2 Key On 0-1
+26 X-Mod Amount 0-127
+27 Osc 1 Sync 0-1
+28 Osc 2 Filter Bypass 0-1
+30 Glide Mode 0-3
+31 Glide On 0-1
+32 Pitch Bend Rng Up 0-12
+33 Pitch Bend Rng Dn 0-24
+34 Filter Cutoff 0-1024
+35 Filter Cutoff MSB 0-7
+36 Filter Res 0-265
+37 Filter Bandpass 0-1
+38 Filter State 0-512
+39 Filter State MSB 0-127
+40 Filter Key Amt 0-127
+41 Unused
+=====PAGE 9
+9
+TEO-5 User’s GuideTEO-5 MIDI Implementation
+NRPN# Param Range
+42 FX On 0-1
+43 FX Select 0-12
+44 FX Mix 0-127
+45 FX Time 0-127
+46 FX Misc 0-127
+47 FX Sync 0-1
+48 FX Sync Rate 0-10
+50 Reverb On 0-1
+52 Reverb Mix 0-127
+53 Reverb Size 0-127
+54 Reverb PreDelay 0-127
+55 Reverb Decay 0-127
+56 Reverb Tone 0-127
+58 LFO 1 Freq 0-127
+59 LFO 2 Freq 0-127
+60 LFO 1 Amt 0-256
+61 LFO 2 Amt 0-256
+62 LFO 1 Shape 0-4
+63 LFO 2 Shape 0-4
+64 LFO 1 Sync 0-1
+65 LFO 2 Sync 0-1
+66 LFO 1 Dest 0-61
+67 LFO 2 Dest 0-61
+68 LFO 1 Freq Sync 0-15
+69 LFO 2 Freq Sync 0-15
+70 LFO 1 Note Reset 0-1
+71 LFO 2 Note Reset 0-1
+72 LFO 1 Slew 0-127
+73 LFO 2 Slew 0-127
+NRPN# Param Range
+75 Env 1 Amt 0-256
+76 Env 2 Amt 0-256
+77 Env 1 Vel On 0-1
+78 Env 2 Vel On 0-1
+79 Env 1 Delay 0-127
+80 Env 2 Delay 0-127
+81 Env 1 Att 0-256
+82 Env 2 Att 0-256
+83 Env 1 Dec 0-256
+84 Env 2 Dec 0-256
+85 Env 1 Sus 0-127
+86 Env 2 Sus 0-127
+87 Env 1 Rls 0-256
+88 Env 2 Rls 0-256
+89 Env Routes 0-2
+90 Env 1 Dest 0-61
+91 Env Repeat 0-3
+93 Voice Volume 0-127
+95 Distortion 0-127
+96 Vintage 0-127
+97 Unison On 0-1
+98 Unison Voices 0-5
+99 Unison Detune 0-7
+100 Unison Note 1 0-43
+101 Unison Note 2 0-43
+102 Unison Note 3 0-43
+103 Unison Note 4 0-43
+104 Unison Note 5 0-43
+=====PAGE 10
+10 TEO-5 MIDI Implementation
+Oberheim
+NRPN# Param Range
+105 Mod 1 Source 0-19
+106 Mod 2 Source 0-19
+107 Mod 3 Source 0-19
+108 Mod 4 Source 0-19
+109 Mod 5 Source 0-19
+110 Mod 6 Source 0-19
+111 Mod 7 Source 0-19
+112 Mod 8 Source 0-19
+113 Mod 9 Source 0-19
+114 Mod 10 Source 0-19
+115 Mod 11 Source 0-19
+116 Mod 12 Source 0-19
+117 Mod 13 Source 0-19
+118 Mod 14 Source 0-19
+119 Mod 15 Source 0-19
+120 Mod 16 Source 0-19
+121 Mod 1 Amt 0-255
+122 Mod 2 Amt 0-255
+123 Mod 3 Amt 0-255
+124 Mod 4 Amt 0-255
+125 Mod 5 Amt 0-255
+126 Mod 6 Amt 0-255
+127 Mod 7 Amt 0-255
+128 Mod 8 Amt 0-255
+129 Mod 9 Amt 0-255
+130 Mod 10 Amt 0-255
+131 Mod 11 Amt 0-255
+132 Mod 12 Amt 0-255
+133 Mod 13 Amt 0-255
+134 Mod 14 Amt 0-255
+135 Mod 15 Amt 0-255
+NRPN# Param Range
+136 Mod 16 Amt 0-255
+137 Mod 1 Dest 0-64
+138 Mod 2 Dest 0-64
+139 Mod 3 Dest 0-64
+140 Mod 4 Dest 0-64
+141 Mod 5 Dest 0-64
+142 Mod 6 Dest 0-64
+143 Mod 7 Dest 0-64
+144 Mod 8 Dest 0-64
+145 Mod 9 Dest 0-64
+146 Mod 10 Dest 0-64
+147 Mod 11 Dest 0-64
+148 Mod 12 Dest 0-64
+149 Mod 13 Dest 0-64
+150 Mod 14 Dest 0-64
+151 Mod 15 Dest 0-64
+152 Mod 16 Dest 0-64
+153 Key Mode 0-2
+154 Env Retrig 0-1
+155 Scale 0-64
+156 Transpose 0-4
+157 Clock BPM 30-250
+158 Clock Div 0-7
+180 Key Split 0-1
+181 Key Split 2 0-1
+182 Key Split Note 0-43
+183 Arp On 0-1
+184 Arp Mode 0-4
+185 Arp Range 0-2
+186 Arp Repeat 0-3
+187 Arp Relatch 0-1
+=====PAGE 11
+11
+TEO-5 User’s GuideTEO-5 MIDI Implementation
+NRPN Range Description
+4096 0-100 Master Coarse Tune
+4097 0-24 Master Fine Tune
+4098 0-16 MIDI Channel 
+0 = All
+4099 0-3 MIDI Clock Mode 
+0 = Off 
+1 = Out 
+2 = In 
+3 = In Thru
+4100 0-1 MIDI Clock Cable In 
+0 = MIDI Port 
+1 = USB
+4101 0-3 MIDI Clock Cable Out 
+0 = None 
+1= MIDI 
+2 = USB
+3 = All
+4102 0-2 MIDI Param Send* 
+0 = NRPN 
+1 = CC 
+2= Off
+4103 0-2 MIDI Param Receive† 
+0 = NRPN 
+1 = CC 
+2= Off
+4104 0-1 MIDI Control Enable 
+0 = Off 
+1 = On
+4105 0-1 MIDI SysEx Enable 
+0 = Off
+1 = On
+4106 0-1 MIDI SysEx Cable  
+0 = MIDI 
+1 = USB 
+4107 0-2 MIDI Cable Out
+0 = MIDI 
+1 = USB
+2= All
+4108 0-1 MIDI Program Send 
+0 = Off 
+1 = On
+4109 0-1 MIDI Program Recv
+0 = Off 
+1 = On
+NRPN Range Description
+4110 0-1 MIDI Arp Notes 
+0 = Off 
+1 = On
+4111 0-2 Local Control
+0 =All Off
+1= Key/Wheels Off
+2= On
+4112 0-1 Mono/Stereo
+0 = Mono
+1= Stereo
+4113 0-2 Pot Mode
+0 = Relative
+1 =Passthru
+2 = Jump
+4114 0-4 Foot Pedal Assign
+0 = Breath CC2
+1 = Foot CC4
+2 = Exp CC11
+3 = LPF Full
+4 = LPF Half
+4115 0-1 Sustain Pedal Polarity
+0 = Normal
+1 = Reversed
+4116 0-3 Sustain Mode
+0 = Sustain 
+1 = Arp Hold
+2= Apr Hold Moment.
+3 = Seq Start/Stop
+4117 0-64 Global Scale
+4118 0-1 Pressure Enable 
+0 = Off 
+1 = On
+4119 0-7 Pressure Curve
+4120 0-7 Velocity Curve
+4121 0-1 OLED Screen-
+saver
+0 = Off 
+1 = On
+4122 0-1 Arp Beat Sync
+0 = Off
+1 = Quantize
+Global Parameter Data
+The table shows the global data sent and received on global parameter 
+dumps, and corresponding NRPN number when sent/received individually.
+=====PAGE 12
+12 TEO-5 MIDI Implementation
+Oberheim
+Control NRPN Data
+The following table lists the TEO-5’s control NRPN data. It is received 
+and transmitted but not saved as part of a program. 
+NRPN Value Description
+4188 0-1 Seq Play/Stop 
+SysEx Messages
+Universal System Exclusive Message (Device Inquiry)
+Status Description
+1111 0000 System Exclusive (SysEx)
+0111 1110 Non-realtime message
+0vvv vvvv If MIDI channel is set to 1 - 16, 0vvvvvvv must match (unless MIDI Channel = ALL); always 
+responds if 0vvvvvvv  = 0111 1111. 
+0000 0110 Inquiry Message 
+0000 0001 Inquiry Request 
+1111 0111 End of Exclusive (EOX) 
+The TEO-5 responds with: 
+Status Description
+1111 0000 System Exclusive (SysEx)
+0111 1110 Non-realtime message
+0vvv vvvv If MIDI Channel = ALL, 0vvvvvvv = 0111 1111. Otherwise 0vvvvvvv = Channel Number 
+0 - 15.
+0000 0110 Inquiry Message 
+0000 0010 Inquiry Reply 
+0000 0010 Oberheim ID 
+0b1011010 TEO-5  ID  (Family LS) 
+0000 0001 Family MS
+0000 0000 Family Member  LS 
+0000 0000 Family Member  MS
+0000 nnnn Main OS Version High Byte
+0000 nnnn Main OS Version Middle Byte
+0000 nnnn Main OS Version Low Byte
+1111 0111 End of Exclusive (EOX)
+=====PAGE 13
+13
+TEO-5 User’s GuideTEO-5 MIDI Implementation
+Request Program Dump
+Status Description
+1111 0000               System Exclusive (SysEx)
+0000 0010 Oberheim ID
+0b1011010 TEO-5 ID
+0000 0101 Request Program Transmit
+0000 00vv Bank Number, 0 - 15
+0vvv vvvv Program Number, 0 - 127
+1111 0111 End of Exclusive (EOX)
+The TEO-5 will respond by sending out the program data in the format 
+described below in Program Data Dump.
+Request Program Edit Buffer Dump
+Status Description
+1111 0000               System Exclusive (SysEx)
+0000 0010 Oberheim ID
+0b1011010 TEO-5 ID
+0000 0110 Request Program Edit Buffer Transmit
+1111 0111 End of Exclusive (EOX)
+The TEO-5 will respond by sending out the current program edit buffer 
+in the format described below in Program Edit Buffer Data Dump.
+Request Global Parameter Dump
+Status Description
+1111 0000               System Exclusive (SysEx)
+0000 0010 Oberheim ID
+0b1011010 TEO-5 ID
+0000 1110 Request Global Parameter Transmit
+1111 0111 End of Exclusive (EOX)
+The TEO-5 will respond by sending out the current values of the global 
+parameters in the format described in Global Parameters Data Dump.
+=====PAGE 14
+14 TEO-5 MIDI Implementation
+Oberheim
+Program Data Dump
+Status Description
+1111 0000               System Exclusive (SysEx)
+0000 0010 Oberheim ID
+0b1011010 TEO-5 ID
+0000 0010 Program Data
+0000 00vv Bank Number: 0 - 9
+0vvv vvvv Program Number: 0 - 99
+0vvv vvvv 4096 bytes expanded to 4690 MIDI bytes in “packed MS bit” format
+1111 0111 End of Exclusive (EOX)
+Program Edit Buffer Data Dump
+Status Description
+1111 0000               System Exclusive (SysEx)
+0000 0010 Oberheim ID
+0b1011010 TEO-5 ID
+0000 0011 Edit Buffer Data
+0vvv vvvv 4096 bytes expanded to 4690 MIDI bytes in “packed MS bit” format
+1111 0111 End of Exclusive (EOX)
+=====PAGE 15
+15
+TEO-5 User’s GuideTEO-5 MIDI Implementation
+ Global Parameters Data Dump 
+Value Description
+1111 0000 System Exclusive (SysEx)
+0000 0010 Oberheim ID
+0b1011010 TEO-5 ID
+0000 1111 Main Parameter Data
+0vvv vvvv 50 nibbles (LS then MS) for 25 Global parameters
+1111 0111 End of Exclusive (EOX)
+The Global Parameters Data Dump is not recognized when received. It 
+is only transmitted when requested. NRPN messages are used to change 
+Globals.
+Packed Data Format 
+Data is packed in 8 byte “packets”, with the MS bit stripped from 7 param-
+eter bytes, and packed into an eighth byte, which is sent at the start of the 8 
+byte packet.
+Example:
+Input Data    Packed MIDI data
+1 A7 A6 A5 A4 A3 A2 A1 A0  1   00 G7 F7 E7 D7 C7 B7 A7
+2 B7 B6 B5 B4 B3 B2 B1 B0  2   00 A6 A5 A4 A3 A2 A1 A0
+3 C7 C6 C5 C4 C3 C2 C1 C0  3   00 B6 B5 B4 B3 B2 B1 B0
+4 D7 D6 D5 D4 D3 D2 D1 D0  4   00 C6 C5 C4 C3 C2 C1 C0
+5 E7 E6 E5 E4 E3 E2 E1 E0  5   00 D6 D5 D4 D3 D2 D1 D0
+6 F7 F6 F5 F4 F3 F2 F1 F0  6   00 E6 E5 E4 E3 E2 E1 E0
+7 G7 G6 G5 G4 G3 G2 G1 G0  7   00 F6 F5 F4 F3 F2 F1 F0
+     8   00 G6 G5 G4 G3 G2 G1 G0
+ 
+=====PAGE 16
+16 TEO-5 MIDI Implementation
+Oberheim
