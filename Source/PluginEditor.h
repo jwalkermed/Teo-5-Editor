@@ -26,6 +26,8 @@ public:
 
     // Default editor width; height follows the photo's aspect ratio.
     static constexpr int defaultWidth = 1700;
+    // Size limits when dragging the corner: 70% of the default up to 3840 px wide (a 4K screen).
+    static constexpr int minWidth = defaultWidth * 7 / 10, maxWidth = 3840;
 
     void setDrawerOpen (bool);
     void setGlobalOpen (bool);

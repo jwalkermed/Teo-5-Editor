@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
 #include "PluginEditor.h"
-#include "UI/WriteLocationDialog.h"
 #include <map>
 
 // The width the editor last had in any instance, so a new instance (new Live set, new Live session) opens at it.
@@ -178,26 +177,17 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
         if (saved)
             oledMessage ("WRITE", written ? "Stored in " + teo5::HardwareTransfer::locationName (*written, program) : ps.name + " saved");
     };
-    // The TEO-5's sound changed without telling (e.g. its GLOBAL > Basic Program): the panel has followed it.
-    processor.getMidiSync().followSynth = true;
-    processor.getMidiSync().onSynthProgramReplaced = [this]
-    {
-        comparing = false;
-        oledMessage ("TEO-5", processor.getProgramState().name);
-    };
     library.onShowMessage = [this] (const juce::String& s) { oledMessage ("LIBRARY", s); };
 
     const double aspect = (double) PanelComponent::designWidth / (double) PanelComponent::designHeight;
-    const int defaultHeight = juce::roundToInt (defaultWidth / aspect);
     // Reopen at the size the user last chose (read now: setting the limits below resizes the editor): this instance's
     // (also saved in projects), else the last size of any instance, else the default.
     const int lastWidth = lastWidthFile().loadFileAsString().getIntValue();
-    const int initialWidth = juce::jlimit (juce::roundToInt (defaultWidth * 0.7), juce::roundToInt (defaultWidth * 1.5),
+    const int initialWidth = juce::jlimit (minWidth, maxWidth,
                                            p.editorWidth > 0 ? p.editorWidth.load() : lastWidth > 0 ? lastWidth : defaultWidth);
 
     setResizable (true, true);
-    setResizeLimits (juce::roundToInt (defaultWidth * 0.7), juce::roundToInt (defaultHeight * 0.7),
-                     juce::roundToInt (defaultWidth * 1.5), juce::roundToInt (defaultHeight * 1.5));
+    setResizeLimits (minWidth, juce::roundToInt (minWidth / aspect), maxWidth, juce::roundToInt (maxWidth / aspect));
     if (auto* c = getConstrainer())
         c->setFixedAspectRatio (aspect);
 
@@ -221,8 +211,6 @@ TEO5Editor::~TEO5Editor()
     processor.getMidiSync().onRemoteChange = nullptr;
     processor.getMidiSync().onProgramChanged = nullptr;
     processor.getMidiSync().onNameFieldFound = nullptr;
-    processor.getMidiSync().onSynthProgramReplaced = nullptr;
-    processor.getMidiSync().followSynth = false;
 }
 
 void TEO5Editor::handlePanelAction (const juce::String& action)
@@ -781,9 +769,12 @@ void TEO5Editor::resized()
     const int libraryW = juce::jmin (900, getWidth() * 11 / 20); // two columns: TEO-5 | MY BANKS
     library.setBounds (cheek, 0, libraryW, getHeight());
     {
+        // Right next to the library, easy to see while picking a slot, and never over it: at the smallest size it
+        // still fits between the library and the right cheek.
         auto& save = library.getSavePanel();
-        const int free = getWidth() - cheek - library.getRight();
-        save.setTopLeftPosition (library.getRight() + juce::jmax (8, (free - save.getWidth()) / 2), juce::jmax (8, getHeight() / 5));
+        save.setTopLeftPosition (library.getRight() + 12, juce::jlimit (8, juce::jmax (8, getHeight() - save.getHeight() - 8),
+                                                                        getHeight() / 5));
+        jassert (save.getRight() <= getWidth() - cheek);
     }
     const int modMatrixW = juce::jmin (540, getWidth() / 2);
     modMatrix.setBounds (cheek, 0, modMatrixW, getHeight());

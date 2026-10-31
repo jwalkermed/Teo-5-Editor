@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
 #include "LibraryDrawer.h"
-#include "WriteLocationDialog.h"
 #include "TEO5LookAndFeel.h"
 #include "../Library/SyxIO.h"
 
@@ -714,8 +713,6 @@ LibraryDrawer::LibraryDrawer (LibraryModel& m, HardwareTransfer& t, MidiSync& s,
 
 LibraryDrawer::~LibraryDrawer()
 {
-    if (saving)
-        sync.pauseFollowing = false;
     transfer.onFinished = nullptr;
     model.removeChangeListener (this);
 }
@@ -1383,22 +1380,13 @@ void LibraryDrawer::loadToEditBuffer (ProgramRef ref)
     }
 }
 
+// Right-click > Write to TEO-5 memory: the same save as the panel's WRITE, for this program.
 void LibraryDrawer::writeToLocation (ProgramRef ref)
 {
     auto* p = model.program (ref);
-    if (p == nullptr || p->raw == nullptr)
+    if (p == nullptr || p->raw == nullptr || saving)
         return;
-    // Start at the panel's location, unless that's a factory one (those can't be written).
-    const bool factory = isFactoryPanel && isFactoryPanel();
-    auto raw = p->raw;
-    auto name = p->name;
-    chooseWriteLocation (this, name, factory ? 1 : programState.bank, factory ? 1 : programState.program, model,
-                         [this, raw, name] (int bank, int prog)
-                         {
-                             sync.writeProgram (bank, prog, false, *raw);
-                             model.noteWrittenToSynth (bank, prog - 1, *raw, name); // that slot's NOT SENT mark follows
-                             setStatus ("Wrote \"" + name + "\" to " + HardwareTransfer::locationName ({ bank, false }, prog));
-                         });
+    beginSave (*p->raw, p->name, locationOf (ref), ref);
 }
 
 void LibraryDrawer::sendBankToHardware (int b)
@@ -1784,7 +1772,6 @@ void LibraryDrawer::beginSave (const juce::MemoryBlock& raw, const juce::String&
     saveName = name;
     saveFrom = from;
     saveTarget = {};
-    sync.pauseFollowing = true; // the edit buffer is about to hold other programs on purpose
     selection.clear();
 
     // The panel's program is selected; if it isn't in a User bank or one of your banks, start at User 1, slot 01.
@@ -1862,7 +1849,6 @@ void LibraryDrawer::confirmSave()
     programState.name = saveName;
     loaded = ref;
     saving = auditioned = false;
-    sync.pauseFollowing = false;
     saveTarget = {};
     savePanel->setVisible (false);
     selection.clear();
@@ -1881,7 +1867,6 @@ void LibraryDrawer::cancelSave()
     if (std::exchange (auditioned, false))
         sync.restoreEditBuffer(); // your edit goes back
     saving = false;
-    sync.pauseFollowing = false;
     saveTarget = {};
     savePanel->setVisible (false);
     selection.clear();
@@ -2018,7 +2003,7 @@ THE TWO COLUMNS
 
 LOADING AND ORGANISING
 - Click a program to load it into the TEO-5's edit buffer (nothing is written to memory). Shift-click and Cmd-click select several.
-- Icons on each row: star (favourite), export as .syx, rename, delete. Right-click for more (tags, copy, paste, duplicate, write to TEO-5 memory).
+- Icons on each row: star (favourite), export as .syx, rename, delete. Right-click for more (tags, copy, paste, duplicate). Right-click > Write to TEO-5 memory saves that program the same way as WRITE on the panel (see below).
 - Drag programs between banks: within the TEO-5 User banks or one of your banks a drop on another program swaps the two; Option-drag copies. Drag a bank's header to reorder banks.
 - Search finds names, sources and tags (type tag:pad for tags only). Favourites shows starred programs only.
 - Undo and Redo cover every change in the library.

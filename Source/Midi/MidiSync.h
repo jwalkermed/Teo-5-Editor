@@ -2,8 +2,6 @@
 // Copyright (C) 2026 The TEO-5 Editor project
 #pragma once
 
-#include <deque>
-
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <array>
 #include "MidiPortManager.h"
@@ -71,8 +69,6 @@ public:
     // A new plug-in instance: if no saved state is restored within a moment (a new track rather than a saved
     // project), select User 1, program 01 on the TEO-5 (program change, then the program is read into the panel).
     void fetchSynthUnlessRestored();
-    // Two programs make the same sound: every mapped parameter, the name and the sequence are equal.
-    bool sameSound (const juce::MemoryBlock& a, const juce::MemoryBlock& b) const;
     // The TEO-5 follows external MIDI clock (Global Clock Mode In, In Thru or In No S/S), as last read from it.
     bool clockIsExternal() const;
     // Global Clock Mode as last read (0 Off, 1 Out, 2 Out No S/S, 3 In, 4 In Thru, 5 In No S/S), or -1 if not read yet.
@@ -181,12 +177,6 @@ public:
 
     // Fired (message thread) when the TEO-5 changes program; ProgramState already holds the new location.
     std::function<void()> onProgramChanged;
-    // The TEO-5's sound changed without a MIDI message (e.g. GLOBAL > Basic Program on the synth) and was read back.
-    std::function<void()> onSynthProgramReplaced;
-    // While the editor is open, the synth's edit buffer is re-read every couple of seconds so changes the TEO-5
-    // doesn't send (loading its Basic Program) still show. pauseFollowing stops it (e.g. while the library is
-    // auditioning other programs in the edit buffer).
-    bool followSynth = false, pauseFollowing = false;
     // Fired (message thread) when the program-name field becomes known.
     std::function<void()> onNameFieldFound;
 
@@ -261,15 +251,6 @@ private:
     bool globalsReceived = false;
 
     int pendingRequestTicks = -1;
-    // Edit-buffer replies in the order they were asked for: true = a follow poll (compared, applied only if the synth
-    // changed on its own), false = a request whose reply loads the panel. Entries expire after 4 s.
-    std::deque<std::pair<bool, juce::uint32>> expectedReplies;
-    int pollTicks = 0, pollSentCount = 0, lastSentCountSeen = 0;
-    juce::uint32 lastSentChangeAt = 0;
-    juce::MemoryBlock pollCandidate; // a changed sound must be read twice in a row before the panel follows it
-    juce::MemoryBlock lastFollowed;  // the sound last loaded this way (never loaded twice in a row)
-    void pollSynth();
-    void followPolledProgram (const juce::MemoryBlock&);
     int lastBankSelect = 0;
     juce::uint32 quietUntil = 0; // no OLED parameter popups until then (message thread)
     std::vector<juce::MemoryBlock> recentDumps; // distinct edit buffers, until the name field is known

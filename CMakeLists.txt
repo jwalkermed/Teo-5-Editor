@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Universal binary")
 
-project(TEO5Editor VERSION 1.0.12 LANGUAGES C CXX)
+project(TEO5Editor VERSION 1.0.14 LANGUAGES C CXX)
 add_compile_definitions(TEO5_VERSION="${PROJECT_VERSION}")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -83,7 +83,6 @@ set(TEO5_CORE_SOURCES
     Source/Midi/MidiSync.cpp
     Source/UI/MidiSettingsDrawer.cpp
     Source/UI/SettingsDrawer.cpp
-    Source/UI/WriteLocationDialog.cpp
     Source/Library/LibraryModel.cpp
     Source/Library/SyxIO.cpp
     Source/Library/HardwareTransfer.cpp

@@ -3,6 +3,24 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.0.14 (2026-10-31)
+
+**Changed**
+- The editor no longer re-reads the synth's sound every two seconds (added in 1.0.10 to follow the TEO-5's own
+  GLOBAL > Basic Program, which the synth doesn't announce over MIDI). That constant SysEx traffic filled the MIDI
+  monitor, made the TEO-5 show its SysEx screen, and could keep a new editor from landing on User 1-01. To start from
+  the Basic Program, use INIT on the editor's panel.
+
+## 1.0.13 (2026-10-31)
+
+**Changed**
+- The Save program pop-up (WRITE) now sits right next to the library drawer instead of in the middle of the panel,
+  and never covers the library at any editor size.
+- Right-click > **Write to TEO-5 memory** in the library now saves the same way as WRITE on the panel: the library
+  becomes a slot picker for that program, with the same pop-up, audition and Confirm/Cancel. (The old bank and
+  program dialog is gone.)
+- The editor can now be dragged up to 3840 px wide, for 4K screens (it was limited to 150% of its normal size).
+
 ## 1.0.12 (2026-10-31)
 
 **Changed**

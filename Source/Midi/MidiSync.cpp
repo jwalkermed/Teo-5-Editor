@@ -396,54 +396,7 @@ void MidiSync::sendAllParameters()
 
 void MidiSync::requestEditBuffer()
 {
-    expectedReplies.push_back ({ false, juce::Time::getMillisecondCounter() });
     ports.queueOrdered (SysEx::requestEditBuffer());
-}
-
-// Every 2 s while the editor is open and nothing else is going on: ask for the edit buffer (see followPolledProgram).
-void MidiSync::pollSynth()
-{
-    if (++pollTicks < 40)
-        return;
-    pollTicks = 0;
-    const auto now = juce::Time::getMillisecondCounter();
-    while (! expectedReplies.empty() && now - expectedReplies.front().second > 4000)
-        expectedReplies.pop_front();
-    bool busy = false;
-    {
-        const juce::ScopedLock sl (dumpLock);
-        busy = waiterActive;
-    }
-    if (! followSynth || pauseFollowing || busy || ! hasOutput() || isProbing() || synthRecording
-        || pendingRequestTicks > 0 || ! expectedReplies.empty() || ! SysEx::isProgramSize (programState.raw.getSize())
-        || layout.isEmpty() || now - lastSentChangeAt < 1000)
-        return;
-    expectedReplies.push_back ({ true, now });
-    ports.queueOrdered (SysEx::requestEditBuffer());
-    pollSentCount = ports.sentCount();
-}
-
-// A polled edit buffer: if it's what the panel has, nothing happened. If it differs and nothing was sent meanwhile
-// (so it isn't an edit on its way), the synth changed on its own; once two polls agree, the panel loads it.
-void MidiSync::followPolledProgram (const juce::MemoryBlock& raw)
-{
-    if (ports.sentCount() > pollSentCount + 1 || sameSound (raw, captureCurrent()))
-    {
-        pollCandidate.reset();
-        return;
-    }
-    if (raw == lastFollowed)
-        return; // already loaded once: whatever still differs, loading it again wouldn't change anything
-    if (pollCandidate != raw)
-    {
-        pollCandidate = raw;
-        return;
-    }
-    pollCandidate.reset();
-    lastFollowed = raw;
-    applyProgramData (raw);
-    if (onSynthProgramReplaced)
-        onSynthProgramReplaced();
 }
 
 void MidiSync::deviceInquiry()
@@ -633,7 +586,6 @@ void MidiSync::handleMessage (const juce::MidiMessage& m)
     else if (m.isProgramChange())
     {
         // The synth changed program: follow it on the panel and refresh the edit buffer.
-        pollCandidate.reset();
         programState.factory = lastBankSelect >= 16;
         programState.bank = (lastBankSelect % 16) + 1;
         programState.program = juce::jlimit (0, 15, m.getProgramChangeNumber()) + 1;
@@ -690,20 +642,7 @@ void MidiSync::handleSysEx (const juce::MidiMessage& m)
                 }
             }
             if (parsed.type == T::EditBuffer)
-            {
-                bool polled = false;
-                if (! expectedReplies.empty())
-                {
-                    polled = expectedReplies.front().first;
-                    expectedReplies.pop_front();
-                }
-                if (polled)
-                {
-                    followPolledProgram (parsed.data);
-                    break;
-                }
                 applyProgramData (parsed.data);
-            }
             break;
 
         case T::Globals:
@@ -802,32 +741,6 @@ std::optional<int> MidiSync::storedValue (const juce::String& paramId) const
     if (f == nullptr || def == nullptr || ! SysEx::isProgramSize (raw.getSize()))
         return std::nullopt;
     return juce::jlimit (def->minValue, def->maxValue, layout.read (raw, *f));
-}
-
-bool MidiSync::sameSound (const juce::MemoryBlock& a, const juce::MemoryBlock& b) const
-{
-    if (! SysEx::isProgramSize (a.getSize()) || ! SysEx::isProgramSize (b.getSize()))
-        return false;
-    if (a == b)
-        return true;
-    if (layout.isEmpty())
-        return false;
-    // As the panel sees them: a stored value outside a parameter's range (real programs have some, e.g. reverb size
-    // 255) is clamped, so it can't make two programs differ that the panel shows the same.
-    for (auto& [id, f] : layout.allFields())
-    {
-        auto* def = findById (id);
-        auto value = [&] (const juce::MemoryBlock& m)
-        {
-            const int v = layout.read (m, f);
-            return def != nullptr ? juce::jlimit (def->minValue, def->maxValue, v) : v;
-        };
-        if (value (a) != value (b))
-            return false;
-    }
-    if (layout.nameOffset >= 0 && layout.readName (a) != layout.readName (b))
-        return false;
-    return Sequence::read (a) == Sequence::read (b);
 }
 
 bool MidiSync::isEdited() const
@@ -1178,12 +1091,6 @@ void MidiSync::drainHostMidiOut (juce::MidiBuffer& buffer)
 void MidiSync::timerCallback()
 {
     followSynthRecording();
-    if (ports.sentCount() != lastSentCountSeen)
-    {
-        lastSentCountSeen = ports.sentCount();
-        lastSentChangeAt = juce::Time::getMillisecondCounter(); // the editor is sending: no poll for a moment
-    }
-    pollSynth();
     if (pendingRequestTicks > 0 && --pendingRequestTicks == 0)
     {
         pendingRequestTicks = -1;

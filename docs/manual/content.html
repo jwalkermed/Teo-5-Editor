@@ -188,9 +188,9 @@ choice.</p>
   <li>With no drawer open, the <b>arrow keys</b> do the same: Left/Right step the program, Up/Down the bank.</li>
 </ul>
 <p>Each change sends Bank Select and Program Change to the TEO-5 and then reads the new program, so the panel,
-mod matrix and sequencer all show the sound you're hearing. Changes made on the synth itself follow too, including
-loading its Basic Program (GLOBAL &gt; Basic Program), which the TEO-5 doesn't announce over MIDI: while the editor is
-open it re-reads the synth's sound every couple of seconds, and never overwrites your own edits doing so.</p>
+mod matrix and sequencer all show the sound you're hearing. Program changes and knob moves made on the synth follow
+too. Loading the Basic Program on the synth (GLOBAL &gt; Basic Program) sends nothing over MIDI, so the panel doesn't
+see it; use <b>INIT</b> on the editor's panel instead.</p>
 
 <h2>COMPARE</h2>
 <p>Switches between your edited sound and the program as it was loaded, like COMPARE on the synth. Press it again
@@ -277,7 +277,8 @@ to save or drop one more program. The <b>?</b> left of LIBRARY opens a guide to 
   <li>The icons on each row: <b>star</b> (favourite), <b>export .syx</b>, <b>rename</b>, <b>delete</b>. Factory
   programs show only the star and export.</li>
   <li><b>Right-click</b> a program for more: load, write, rename, tags, favourite, copy, paste, duplicate, export,
-  delete. Right-click a bank to rename, import, export, send it to the TEO-5, fetch it again, or delete it.</li>
+  delete. <i>Write to TEO-5 memory</i> saves that program the same way as WRITE on the panel: pick a slot, audition,
+  then Confirm. Right-click a bank to rename, import, export, send it to the TEO-5, fetch it again, or delete it.</li>
   <li>Tags appear on the right of the row; give a program several tags (for example <i>pad, ambient</i>).</li>
   <li>Cmd+C, Cmd+V and Delete work on the selection. Every delete asks first.</li>
 </ul>
