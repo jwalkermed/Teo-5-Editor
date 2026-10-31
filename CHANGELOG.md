@@ -3,6 +3,16 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.0.7 (2026-10-30)
+
+**Changed**
+- **REVERT** asks first when you have edits, since they can't be brought back. Before any program has been loaded it
+  says there is nothing to revert to, instead of fetching the synth's current (edited) sound.
+
+**Fixed**
+- Loading a program into the edit buffer (REVERT, COMPARE, INIT, or a program from the library) no longer leaves the
+  sequencer stopped: the TEO-5 stops it whenever a program arrives, so the editor sends Play again if PLAY was on.
+
 ## 1.0.6 (2026-10-30)
 
 **New**

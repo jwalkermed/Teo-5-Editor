@@ -256,20 +256,29 @@ void TEO5Editor::oledMessage (const juce::String& title, const juce::String& tex
     panel.getOled().showParameter (title, text);
 }
 
+// The current panel as a program. If no program has come from the synth yet, it's fetched (so a second press
+// works) and an empty block is returned.
+juce::MemoryBlock TEO5Editor::currentProgramOrFetch (const juce::String& title)
+{
+    auto& sync = processor.getMidiSync();
+    auto raw = sync.captureCurrent();
+    if (raw.isEmpty())
+    {
+        sync.requestEditBuffer();
+        oledMessage (title, "Reading the program from the TEO-5. Press again");
+    }
+    return raw;
+}
+
 // COMPARE, as on the hardware: toggle between the edited program and the program as it was loaded.
 void TEO5Editor::toggleCompare()
 {
     auto& sync = processor.getMidiSync();
     if (! comparing)
     {
-        compareStash = sync.captureCurrent();
+        compareStash = currentProgramOrFetch ("COMPARE");
         if (compareStash.isEmpty())
-        {
-            // No program has come from the synth yet: fetch it so a second press works.
-            sync.requestEditBuffer();
-            oledMessage ("COMPARE", "Reading the program from the TEO-5. Press again");
             return;
-        }
         comparing = true;
         sync.loadProgram (processor.getProgramState().raw, true);
         oledMessage ("COMPARE", "Stored program");
@@ -285,18 +294,13 @@ void TEO5Editor::toggleCompare()
 
 void TEO5Editor::writeCurrentProgram()
 {
-    auto& sync = processor.getMidiSync();
     auto& ps = processor.getProgramState();
     if (comparing)
         toggleCompare(); // write the edit, not the stored version
 
-    auto raw = sync.captureCurrent();
+    auto raw = currentProgramOrFetch ("WRITE");
     if (raw.isEmpty())
-    {
-        sync.requestEditBuffer(); // no program has come from the synth yet: fetch it so a second press works
-        oledMessage ("WRITE", "Reading the program from the TEO-5. Press again");
         return;
-    }
     // Ask where to store it, starting at the panel's location (or User 1-01 if FACTORY is lit: factory programs
     // can't be changed).
     const bool factory = panel.isFactory();
@@ -358,26 +362,48 @@ void TEO5Editor::stepLibraryBank (int delta)
     oledMessage ("BANK", "This bank has no programs");
 }
 
-// Loads the TEO-5's Basic Program into the edit buffer, like GLOBAL > Basic Program on the synth.
-// It never writes to memory: WRITE stores it.
+// REVERT: drop the edits and go back to the program as loaded (or last written). Asks first when there are edits,
+// since the edit can't be brought back (COMPARE's stash and the drawers' undo histories start over).
 void TEO5Editor::revertProgram()
 {
     auto& sync = processor.getMidiSync();
     const auto& ps = processor.getProgramState();
     if (! teo5::SysEx::isProgramSize (ps.raw.getSize()))
     {
-        sync.requestEditBuffer(); // no program has come from the synth yet: fetch it so a second press works
-        oledMessage ("REVERT", "Reading the program from the TEO-5. Press again");
+        // Fetching now would make the current (edited) sound the one to revert to.
+        oledMessage ("REVERT", "Nothing to revert to yet: choose a program first");
         return;
     }
-    comparing = false; // the stored program is what COMPARE would show; the edit is dropped
-    compareStash.reset();
-    const auto raw = ps.raw; // loadProgram replaces ps.raw with its argument
-    sync.loadProgram (raw, true);
-    oledMessage ("REVERT", ps.name.isNotEmpty() ? ps.name : juce::String ("Program as loaded"));
-    panel.repaint();
+    auto revert = [this]
+    {
+        auto& s = processor.getMidiSync();
+        comparing = false; // the stored program is what COMPARE would show; the edit is dropped
+        compareStash.reset();
+        if (s.revertToOriginal())
+        {
+            const auto& name = processor.getProgramState().name;
+            oledMessage ("REVERT", name.isNotEmpty() ? name : juce::String ("Program as loaded"));
+        }
+        panel.repaint();
+    };
+    if (! comparing && sync.captureCurrent() == ps.raw)
+    {
+        revert(); // nothing edited: nothing to lose
+        return;
+    }
+    juce::AlertWindow::showOkCancelBox (juce::MessageBoxIconType::WarningIcon, "Revert",
+                                        "Drop all your edits and go back to \"" + ps.name + "\" as it was loaded?\n\n"
+                                        "This can't be undone. Nothing is written to the TEO-5's memory.",
+                                        "Revert", "Cancel", this,
+                                        juce::ModalCallbackFunction::create ([revert, safe = juce::Component::SafePointer<TEO5Editor> (this)] (int r)
+                                        {
+                                            if (r == 1 && safe != nullptr)
+                                                revert();
+                                        }));
 }
 
+// Loads the TEO-5's Basic Program into the edit buffer, like GLOBAL > Basic Program on the synth.
+// It never writes to memory: WRITE stores it.
 void TEO5Editor::initializePreset()
 {
     const auto raw = teo5::MidiSync::basicProgram();

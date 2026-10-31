@@ -104,9 +104,12 @@ public:
     std::optional<juce::MemoryBlock> fetchProgram (int panelBank, int panelProgram, bool factory, int timeoutMs = 2000);
     std::optional<juce::MemoryBlock> fetchEditBuffer (int timeoutMs = 1500);
 
-    // Apply a program to the panel and send it to the TEO-5 edit buffer (never writes memory).
+    // Apply a program to the panel and send it to the TEO-5 edit buffer (never writes memory). The TEO-5 stops its
+    // sequencer on an edit buffer, so Play is resent if it was on.
     // asOriginal = false keeps the current "as loaded" program (used by COMPARE to restore the edit).
     void loadProgram (const juce::MemoryBlock& raw, bool asOriginal = true);
+    // REVERT: load the program as loaded (or last written) into the edit buffer. False if none has been received.
+    bool revertToOriginal();
     // Make `raw` the "as loaded" version (e.g. after it was written to memory).
     void setOriginal (const juce::MemoryBlock& raw) { programState.raw = raw; }
     // The current panel as a program: last received program with every mapped parameter and the name written in.

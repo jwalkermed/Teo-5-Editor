@@ -482,6 +482,23 @@ void partB()
         check (waitFor ([&] { const juce::ScopedLock sl (fake.lock); return fake.program == *p->raw; }, 3000),
                "library program loaded into the synth's edit buffer");
 
+        // REVERT: an edit, then back to the program as loaded, through the edit buffer only (memory untouched).
+        {
+            size_t stored = 0;
+            {
+                const juce::ScopedLock sl (fake.lock);
+                stored = fake.memory.size();
+            }
+            proc.setNative ("vintage", proc.getNative ("vintage") == 10 ? 20 : 10);
+            check (waitFor ([&] { const juce::ScopedLock sl (fake.lock); return fake.program != *p->raw; }, 3000),
+                   "an edit changes the synth's edit buffer");
+            check (sync.revertToOriginal(), "REVERT finds the program as loaded");
+            check (waitFor ([&] { const juce::ScopedLock sl (fake.lock); return fake.program == *p->raw; }, 3000),
+                   "REVERT puts the loaded program back in the edit buffer");
+            const juce::ScopedLock sl (fake.lock);
+            check (fake.memory.size() == stored, "REVERT writes nothing to memory");
+        }
+
         // Write the bank to another location.
         std::vector<juce::MemoryBlock> progs;
         for (auto& lp : lib.banks()[(size_t) hwBank].programs)

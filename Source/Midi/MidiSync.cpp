@@ -811,6 +811,17 @@ void MidiSync::loadProgram (const juce::MemoryBlock& raw, bool asOriginal)
 {
     applyProgramData (raw, asOriginal);
     ports.queueOrdered (SysEx::editBufferDump (raw)); // send the original bytes, including unmapped ones
+    if (currentValue ("seqPlay") != 0)
+        resumeSequencer();
+}
+
+bool MidiSync::revertToOriginal()
+{
+    if (! SysEx::isProgramSize (programState.raw.getSize()))
+        return false;
+    const auto raw = programState.raw; // loadProgram replaces programState.raw with its argument
+    loadProgram (raw, true);
+    return true;
 }
 
 juce::MemoryBlock MidiSync::captureCurrent() const

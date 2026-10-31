@@ -51,6 +51,7 @@ private:
     };
 
     bool anyDrawerOpen() const;
+    juce::MemoryBlock currentProgramOrFetch (const juce::String& title); // empty (and fetching) if none yet
     void toggleCompare();
     void revertProgram(); // REVERT: the program as loaded (or last written), to the edit buffer
     void tapTempo();
