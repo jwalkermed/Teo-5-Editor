@@ -112,8 +112,13 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     }
 
     // ================= SETTINGS / OLED / MEMORY =================
-    addButton (620, 520, false).onClick = [this] { if (onPanelAction) onPanelAction ("global"); };
-    addButton (620, 585, false).onClick = [this] { if (onPanelAction) onPanelAction ("program"); };
+    // GLOBAL and PROGRAM open their drawers (lit while open).
+    for (auto [action, y] : { std::pair<const char*, float> { "global", 520.0f }, { "program", 585.0f } })
+    {
+        auto& b = addButton (620, y, false);
+        b.onClick = [this, action] { if (onPanelAction) onPanelAction (action); };
+        b.litWhen = [this, action] { return isActionLit && isActionLit (action); };
+    }
     label ("GLOBAL", 620, 547);
     label ("PROGRAM", 620, 612);
 
@@ -169,7 +174,13 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     label ("REPEAT", 1202, 675);
 
     // ================= SEQ =================
-    addToggle ("seqRecord", 1289, 537, false);
+    // RECORD is the sequencer drawer's REC (step entry; lit while on). The TEO-5's own RECORD stays on the synth.
+    {
+        auto& rec = addButton (1289, 537, false);
+        rec.onClick = [this] { if (onPanelAction) onPanelAction ("record"); };
+        rec.litWhen = [this] { return isActionLit && isActionLit ("record"); };
+        rec.setTooltip ("Step entry: opens the sequencer with REC on");
+    }
     addToggle ("seqPlay", 1289, 641, false);
     label ("RECORD", 1289, 571);
     label ("PLAY", 1289, 675);

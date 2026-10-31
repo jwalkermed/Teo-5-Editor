@@ -44,6 +44,7 @@ public:
     void setLength (int length);
     void enterNote (int note, int velocity);
     void setRecording (bool);
+    bool isRecording() const { return recording; }
     void restPressed();
     void tiePressed();
     // Marks the sequence changed (refresh, then send to the synth shortly) and records an undo step named `what`.

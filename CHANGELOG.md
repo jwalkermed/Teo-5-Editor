@@ -3,6 +3,16 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.0.5 (2026-10-30)
+
+**Changed**
+- **RECORD** on the front panel is now the sequencer's step entry (REC): it opens the sequencer drawer with REC on.
+  Pressing it again, or closing the drawer, turns REC off. To record on the TEO-5 itself, use the synth's own
+  RECORD button; the steps still fill in live in the drawer.
+
+**Fixed**
+- **GLOBAL** and **PROGRAM** light while their drawers are open.
+
 ## 1.0.4 (2026-10-30)
 
 **New**

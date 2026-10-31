@@ -134,7 +134,9 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
     panel.isActionLit = [this] (const juce::String& a)
     {
         return (a == "compare" && comparing) || (a == "library" && library.isVisible())
-            || (a == "modmatrix" && modMatrix.isVisible());
+            || (a == "modmatrix" && modMatrix.isVisible()) || (a == "global" && globalDrawer.isVisible())
+            || (a == "program" && programDrawer.isVisible())
+            || (a == "record" && sequencer.isVisible() && sequencer.isRecording());
     };
     panel.getOled().onDoubleClick = [this] { renameCurrentProgram(); };
     processor.getMidiSync().onRemoteChange = [this] (const juce::String& id) { panel.showParameter (id); };
@@ -204,6 +206,13 @@ void TEO5Editor::handlePanelAction (const juce::String& action)
         setLibraryOpen (! library.isVisible());
     else if (action == "modmatrix")
         setModMatrixOpen (! modMatrix.isVisible());
+    else if (action == "record")
+    {
+        const bool on = ! (sequencer.isVisible() && sequencer.isRecording());
+        if (on && ! sequencer.isVisible())
+            setSequencerOpen (true);
+        sequencer.setRecording (on);
+    }
     else if (action == "global")
         setGlobalOpen (! globalDrawer.isVisible());
     else if (action == "program")
@@ -567,6 +576,8 @@ void TEO5Editor::setSequencerOpen (bool shouldBeOpen)
 {
     if (shouldBeOpen)
         closeLeftDrawersExcept (sequencer);
+    else if (sequencer.isRecording())
+        sequencer.setRecording (false); // step entry only works with the drawer open
     sequencer.setVisible (shouldBeOpen);
     sequencerTab.open = shouldBeOpen;
     sequencerTab.repaint();

@@ -46,9 +46,9 @@ Right-click any control the TEO-5 can modulate: CUTOFF, RESONANCE, STATE, VOLUME
 - **Undo / Redo** at the top right step through your mod changes.
 ===
 # BUTTONS WORTH KNOWING
-- **MOD** opens the mod matrix. **GLOBAL** and **PROGRAM** open the synth's settings drawers.
+- **MOD** opens the mod matrix. **GLOBAL** and **PROGRAM** open the synth's settings drawers. Each lights while its drawer is open.
 - **TAP TEMPO**: tap in time at least twice; a pause of two seconds starts a new count.
-- **RECORD** and **PLAY** (SEQ) run the TEO-5's step sequencer.
+- **RECORD** (SEQ) opens the sequencer with step entry (REC) on; **PLAY** runs the TEO-5's step sequencer.
 - **LIBRARY** opens your program library (lit while open).
 - **PANIC** stops hung notes. The program, sequencer and arpeggiator are left alone.
 - **INIT** loads the TEO-5's Basic Program into the edit buffer, a clean start for a new sound.

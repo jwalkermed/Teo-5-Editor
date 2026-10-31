@@ -201,6 +201,8 @@ int main (int argc, char* argv[])
             e->setProgramOpen (true);
         if (mode == "guide")
             e->setGuideOpen (true);
+        if (mode == "record")
+            e->handlePanelAction ("record"); // the panel's RECORD: opens the sequencer with REC on
     }
 
     if (mode == "modmatrix" && argc > 4)

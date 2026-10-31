@@ -36,6 +36,7 @@ public:
     void addModulation (int source, int destination); // first free slot, then the mod matrix opens on it
     void setSequencerOpen (bool);
     void setGuideOpen (bool); // the front panel guide (the ? at the top left)
+    void handlePanelAction (const juce::String& action);
 
 private:
     // Narrow tab on an end cheek that opens a drawer.
@@ -49,7 +50,6 @@ private:
         void mouseUp (const juce::MouseEvent&) override { if (onClick) onClick(); }
     };
 
-    void handlePanelAction (const juce::String& action);
     bool anyDrawerOpen() const;
     void toggleCompare();
     void tapTempo();
