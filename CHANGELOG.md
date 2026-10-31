@@ -3,6 +3,13 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.0.6 (2026-10-30)
+
+**New**
+- **REVERT** button under MOD: drops all your edits and goes back to the program as it was loaded (or as last
+  written), sent to the TEO-5's edit buffer. Nothing is written to memory. Hover over it for a tooltip.
+- The **MOD** button has a tooltip saying what it does.
+
 ## 1.0.5 (2026-10-30)
 
 **Changed**

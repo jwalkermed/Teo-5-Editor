@@ -28,7 +28,7 @@ Buttons switch on and off with a click and light red when on. Where the TEO-5 us
 # CHOOSING PROGRAMS
 - **1–16** choose a program in the current bank. **BANK**, then a number, chooses the bank (10–16 show as A–G). **FACTORY** switches between User and Factory banks.
 - **BANK ‹ ›** and **PATCH ‹ ›** under the display step through banks and programs, as do the arrow keys when no drawer is open.
-- **COMPARE** switches between your edit and the program as loaded. **WRITE** stores the sound in a User location you choose; Factory locations are never offered.
+- **REVERT** (under MOD) drops all your edits and goes back to the program as loaded. **COMPARE** switches between your edit and the program as loaded. **WRITE** stores the sound in a User location you choose; Factory locations are never offered.
 ===
 #! ASSIGNING MODULATION (RIGHT-CLICK)
 Right-click any control the TEO-5 can modulate: CUTOFF, RESONANCE, STATE, VOLUME, OVERDRIVE, VINTAGE, X-MOD and the LFO, effect, reverb, oscillator and envelope knobs. The **OSC 1, SUB, OSC 2 and NOISE** buttons stand for their levels.

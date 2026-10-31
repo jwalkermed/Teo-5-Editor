@@ -144,7 +144,7 @@ choice.</p>
   <tr><td>MASTER</td><td>VOLUME, OVERDRIVE</td></tr>
   <tr><td>LFO 1: MONO | LFO 2: POLY</td><td>SYNC, FREQ, SHAPE (LEDs show the shape), DEST, AMOUNT, and the LFO button,
   which chooses whether these controls edit LFO 1 or LFO 2 (LEDs 1 and 2)</td></tr>
-  <tr><td>MOD</td><td>One button that opens and closes the Mod Matrix drawer</td></tr>
+  <tr><td>MOD</td><td>One button that opens and closes the Mod Matrix drawer; REVERT under it</td></tr>
   <tr><td>SETTINGS</td><td>GLOBAL and PROGRAM open those drawers</td></tr>
   <tr><td>Display</td><td>BANK &lt; &gt; and PATCH &lt; &gt; underneath step through banks and programs</td></tr>
   <tr><td>MEMORY</td><td>COMPARE, WRITE (chapter 5)</td></tr>
@@ -193,6 +193,11 @@ mod matrix and sequencer all show the sound you're hearing.</p>
 <h2>COMPARE</h2>
 <p>Switches between your edited sound and the program as it was loaded, like COMPARE on the synth. Press it again
 to return to your edit.</p>
+
+<h2>REVERT</h2>
+<p>The button under MOD. Drops all your edits (knobs, mod matrix, sequence) and goes back to the program as it was
+loaded, or as last written with WRITE. It sends that program to the TEO-5's edit buffer and never writes to memory.
+Hover over it for a reminder.</p>
 
 <h2>WRITE</h2>
 <p>Stores the current sound in the TEO-5's memory. A dialog lets you choose any User bank and program, starting at
@@ -457,6 +462,7 @@ Live's transport would start it.</p>
   <tr><td>Undo / Redo (library)</td><td>Cmd+Z / Shift+Cmd+Z</td></tr>
   <tr><td>Stop hung notes</td><td>PANIC</td></tr>
   <tr><td>Start a sound from scratch</td><td>INIT</td></tr>
+  <tr><td>Undo all edits to the program</td><td>REVERT</td></tr>
   <tr><td>Store in the TEO-5</td><td>WRITE, then choose a User location</td></tr>
 </table>
 <p style="margin-top:18pt;font-size:9pt;color:#666">TEO-5 Editor is free software: you can redistribute it and/or

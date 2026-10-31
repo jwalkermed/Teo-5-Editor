@@ -109,7 +109,17 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
         auto& mod = addButton (533, 538, false);
         mod.onClick = [this] { if (onPanelAction) onPanelAction ("modmatrix"); };
         mod.litWhen = [this] { return isActionLit && isActionLit ("modmatrix"); };
+        mod.setTooltip ("Mod matrix: opens and closes the drawer with all 16 modulation slots (source, amount, "
+                        "destination). Tip: right-click a knob to modulate it");
     }
+    // REVERT, under MOD and level with LFO (label level with LFO's): back to the program as it was loaded.
+    {
+        auto& revert = addButton (533, 643, false);
+        revert.onClick = [this] { if (onPanelAction) onPanelAction ("revert"); };
+        revert.setTooltip ("Revert: undo all edits and go back to the program as it was loaded or last saved "
+                           "(sent to the TEO-5's edit buffer; nothing is written to memory)");
+    }
+    label ("REVERT", 533, 677);
 
     // ================= SETTINGS / OLED / MEMORY =================
     // GLOBAL and PROGRAM open their drawers (lit while open).

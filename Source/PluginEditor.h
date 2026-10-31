@@ -52,6 +52,7 @@ private:
 
     bool anyDrawerOpen() const;
     void toggleCompare();
+    void revertProgram(); // REVERT: the program as loaded (or last written), to the edit buffer
     void tapTempo();
     void writeCurrentProgram();
     void renameCurrentProgram();

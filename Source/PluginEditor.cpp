@@ -217,6 +217,8 @@ void TEO5Editor::handlePanelAction (const juce::String& action)
         setGlobalOpen (! globalDrawer.isVisible());
     else if (action == "program")
         setProgramOpen (! programDrawer.isVisible());
+    else if (action == "revert")
+        revertProgram();
     else if (action == "compare")
         toggleCompare();
     else if (action == "write")
@@ -358,6 +360,24 @@ void TEO5Editor::stepLibraryBank (int delta)
 
 // Loads the TEO-5's Basic Program into the edit buffer, like GLOBAL > Basic Program on the synth.
 // It never writes to memory: WRITE stores it.
+void TEO5Editor::revertProgram()
+{
+    auto& sync = processor.getMidiSync();
+    const auto& ps = processor.getProgramState();
+    if (! teo5::SysEx::isProgramSize (ps.raw.getSize()))
+    {
+        sync.requestEditBuffer(); // no program has come from the synth yet: fetch it so a second press works
+        oledMessage ("REVERT", "Reading the program from the TEO-5. Press again");
+        return;
+    }
+    comparing = false; // the stored program is what COMPARE would show; the edit is dropped
+    compareStash.reset();
+    const auto raw = ps.raw; // loadProgram replaces ps.raw with its argument
+    sync.loadProgram (raw, true);
+    oledMessage ("REVERT", ps.name.isNotEmpty() ? ps.name : juce::String ("Program as loaded"));
+    panel.repaint();
+}
+
 void TEO5Editor::initializePreset()
 {
     const auto raw = teo5::MidiSync::basicProgram();
