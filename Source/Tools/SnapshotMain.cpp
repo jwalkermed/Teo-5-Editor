@@ -14,6 +14,10 @@ int main (int argc, char* argv[])
     // Use a scratch library with a few demo entries instead of the user's library.
     auto libDir = juce::File::getSpecialLocation (juce::File::tempDirectory).getNonexistentChildFile ("teo5-snapshot-lib", {});
     setenv ("TEO5_LIBRARY_DIR", libDir.getFullPathName().toRawUTF8(), 1);
+    // ...and a scratch file for the last editor size, so renders are at the default size whatever the user last had.
+    auto sizeFile = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("teo5-snapshot-width.txt");
+    sizeFile.deleteFile();
+    setenv ("TEO5_EDITOR_SIZE_FILE", sizeFile.getFullPathName().toRawUTF8(), 1);
 
     const juce::File out = argc > 1 ? juce::File::getCurrentWorkingDirectory().getChildFile (argv[1])
                                     : juce::File::getCurrentWorkingDirectory().getChildFile ("panel.png");
@@ -84,7 +88,8 @@ int main (int argc, char* argv[])
     const juce::String mode = argc > 3 ? juce::String (argv[3]) : juce::String();
     if (mode == "size")
     {
-        // The editor reopens at the size it was given, also after the state is saved and loaded (prints the widths).
+        // The editor reopens at the size it was given, also after the state is saved and loaded, and a new instance
+        // opens at the last size of any instance (prints the widths).
         std::unique_ptr<juce::AudioProcessorEditor> first (processor.createEditor());
         std::printf ("new %d", first->getWidth());
         first->setSize (2100, juce::roundToInt (2100 * 590.0 / 1814.0));
@@ -97,7 +102,12 @@ int main (int argc, char* argv[])
         TEO5Processor loaded;
         loaded.setStateInformation (state.getData(), (int) state.getSize());
         std::unique_ptr<juce::AudioProcessorEditor> third (loaded.createEditor());
-        std::printf (" | from saved state %d\n", third->getWidth());
+        std::printf (" | from saved state %d", third->getWidth());
+        third.reset();
+        TEO5Processor fresh; // a new instance with no saved state: the last size of any instance
+        std::unique_ptr<juce::AudioProcessorEditor> fourth (fresh.createEditor());
+        std::printf (" | new instance %d\n", fourth->getWidth());
+        fourth.reset();
         return 0;
     }
     std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditor());

@@ -906,7 +906,7 @@ AT THE TOP
 - LENGTH - / +: the number of steps (1-64). You can also drag along the step numbers to set the length.
 - From TEO-5 / Reset / Undo / Redo (right, above the steps): From TEO-5 reads the sequence that's on the synth now (for example one you recorded with the synth's own RECORD button); it also happens by itself whenever you open this drawer. Reset puts back the sequence stored in the program (as loaded, or as last written). Undo and Redo step through your changes (a read from the TEO-5 included), and the line on the left says what was undone or redone. The history starts over when you change program.
 - If the line on the left warns that the TEO-5's Clock Mode is In or In Thru, set it to In No S/S in the GLOBAL drawer: otherwise Live's Play starts the sequencer even with PLAY off.
-- PLAY: starts and stops the TEO-5's sequencer (the same as PLAY on the synth). With the synth's MIDI Clock set to In No S/S, the sequence runs only while Live plays; PLAY turns amber and the line below says "Waiting for Live". Every time Live starts, the sequence starts again at step 1.
+- PLAY: starts and stops the TEO-5's sequencer (the same as PLAY on the synth). With the synth's MIDI Clock set to In No S/S, the sequence runs only while Live plays; PLAY turns amber and the line below says "Waiting for Live". Every time Live starts, the sequence starts again at step 1. Changing program (bank, patch or FACTORY, here or on the synth) stops the sequencer and turns PLAY off.
 - REC: step entry (see RECORDING below).
 - STEP: the step being played, recorded or selected, and the length.
 

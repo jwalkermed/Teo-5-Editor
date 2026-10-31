@@ -4,6 +4,16 @@
 #include "UI/WriteLocationDialog.h"
 #include <map>
 
+// The width the editor last had in any instance, so a new instance (new Live set, new Live session) opens at it.
+// TEO5_EDITOR_SIZE_FILE overrides the location (the snapshot tool uses a scratch file).
+static juce::File lastWidthFile()
+{
+    if (auto env = juce::SystemStats::getEnvironmentVariable ("TEO5_EDITOR_SIZE_FILE", {}); env.isNotEmpty())
+        return juce::File (env);
+    return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+        .getChildFile ("TEO5Editor").getChildFile ("editor-width.txt");
+}
+
 using teo5::PanelComponent;
 
 TEO5Editor::TEO5Editor (TEO5Processor& p)
@@ -154,9 +164,11 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
 
     const double aspect = (double) PanelComponent::designWidth / (double) PanelComponent::designHeight;
     const int defaultHeight = juce::roundToInt (defaultWidth / aspect);
-    // Reopen at the size the user last chose (read now: setting the limits below resizes the editor).
+    // Reopen at the size the user last chose (read now: setting the limits below resizes the editor): this instance's
+    // (also saved in projects), else the last size of any instance, else the default.
+    const int lastWidth = lastWidthFile().loadFileAsString().getIntValue();
     const int initialWidth = juce::jlimit (juce::roundToInt (defaultWidth * 0.7), juce::roundToInt (defaultWidth * 1.5),
-                                           p.editorWidth > 0 ? p.editorWidth.load() : defaultWidth);
+                                           p.editorWidth > 0 ? p.editorWidth.load() : lastWidth > 0 ? lastWidth : defaultWidth);
 
     setResizable (true, true);
     setResizeLimits (juce::roundToInt (defaultWidth * 0.7), juce::roundToInt (defaultHeight * 0.7),
@@ -179,6 +191,8 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
 
 TEO5Editor::~TEO5Editor()
 {
+    if (lastWidthFile().getParentDirectory().createDirectory())
+        lastWidthFile().replaceWithText (juce::String (getWidth()));
     processor.getMidiSync().onRemoteChange = nullptr;
     processor.getMidiSync().onProgramChanged = nullptr;
     processor.getMidiSync().onNameFieldFound = nullptr;

@@ -499,6 +499,16 @@ void partB()
             check (fake.memory.size() == stored, "REVERT writes nothing to memory");
         }
 
+        // PLAY: a program load keeps the sequence playing; a program change (which stops the synth's sequencer)
+        // turns PLAY off.
+        proc.setNative ("seqPlay", 1);
+        pump (50);
+        sync.loadProgram (*p->raw);
+        pump (50);
+        check (proc.getNative ("seqPlay") == 1, "loading a program keeps PLAY on (Play is resent)");
+        sync.selectProgram (3, 2, true);
+        check (proc.getNative ("seqPlay") == 0, "a program change turns PLAY off");
+
         // Write the bank to another location.
         std::vector<juce::MemoryBlock> progs;
         for (auto& lp : lib.banks()[(size_t) hwBank].programs)

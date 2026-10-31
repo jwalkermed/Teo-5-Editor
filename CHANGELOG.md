@@ -3,6 +3,20 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.0.9 (2026-10-30)
+
+**Fixed**
+- Changing program while the sequence plays (BANK, FACTORY, the 1–16 buttons, PATCH ‹ ›, the arrow keys, the
+  sequencer drawer's bank and PATCH controls, or on the TEO-5 itself) stops the TEO-5's sequencer, and **PLAY** now
+  goes off with it instead of staying lit. Loading a program without a program change (REVERT, COMPARE, INIT, the
+  library) still keeps the sequence playing.
+
+## 1.0.8 (2026-10-30)
+
+**Changed**
+- A new instance of the editor (in a new Live set, or after restarting Live) opens at the size you last gave the
+  editor window, instead of the default size. A saved project still opens at the size it was saved with.
+
 ## 1.0.7 (2026-10-30)
 
 **Changed**

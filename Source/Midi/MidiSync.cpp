@@ -528,8 +528,20 @@ void MidiSync::selectProgram (int bank, int program, bool factory)
     quietUntil = juce::Time::getMillisecondCounter() + 1500;
     ports.queueOrdered (juce::MidiMessage::controllerEvent (ch, 32, a.bankSelect));
     ports.queueOrdered (juce::MidiMessage::programChange (ch, a.programChange));
+    sequencerStoppedByProgramChange();
     if (settings.requestOnProgramChange)
         pendingRequestTicks = 3; // give the synth ~150 ms to load the program
+}
+
+// A program change stops the TEO-5's sequencer: show PLAY off (nothing is sent; PLAY starts it again).
+void MidiSync::sequencerStoppedByProgramChange()
+{
+    if (auto* p = apvts.getParameter ("seqPlay"); p != nullptr && currentValue ("seqPlay") != 0)
+    {
+        applyingIncoming = true; // the synth has already stopped: don't send Stop
+        p->setValueNotifyingHost (0.0f);
+        applyingIncoming = false;
+    }
 }
 
 // ---- Incoming -------------------------------------------------------------------------------
@@ -574,6 +586,7 @@ void MidiSync::handleMessage (const juce::MidiMessage& m)
         programState.bank = (lastBankSelect % 16) + 1;
         programState.program = juce::jlimit (0, 15, m.getProgramChangeNumber()) + 1;
         quietUntil = juce::Time::getMillisecondCounter() + 1500;
+        sequencerStoppedByProgramChange();
         if (onProgramChanged)
             onProgramChanged();
         if (settings.requestOnProgramChange)

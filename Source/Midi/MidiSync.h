@@ -110,6 +110,8 @@ public:
     void loadProgram (const juce::MemoryBlock& raw, bool asOriginal = true);
     // REVERT: load the program as loaded (or last written) into the edit buffer. False if none has been received.
     bool revertToOriginal();
+    // A program change (from the editor or the synth) stops the TEO-5's sequencer: turns PLAY off without sending.
+    void sequencerStoppedByProgramChange();
     // Make `raw` the "as loaded" version (e.g. after it was written to memory).
     void setOriginal (const juce::MemoryBlock& raw) { programState.raw = raw; }
     // The current panel as a program: last received program with every mapped parameter and the name written in.
