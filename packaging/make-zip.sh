@@ -21,7 +21,7 @@ cp build/TEO5PluginCheck_artefacts/Release/TEO5PluginCheck "$STAGE/"
 for b in "$STAGE/$NAME".* "$STAGE/TEO5PluginCheck"; do
   codesign --force --deep --sign - "$b"   # ad-hoc signature (not notarized)
 done
-cp packaging/install.command packaging/README.txt THIRD-PARTY-NOTICES.md "$STAGE/"
+cp packaging/install.command packaging/README.txt THIRD-PARTY-NOTICES.md CHANGELOG.md "$STAGE/"
 cp LICENSE "$STAGE/LICENSE.txt"
 cp build/manual/TEO-5-Editor-Users-Guide.pdf "$STAGE/"
 chmod +x "$STAGE/install.command"

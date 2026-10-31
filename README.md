@@ -6,7 +6,7 @@ VST3 / AU / Standalone editor-librarian for the Oberheim TEO-5 desktop module, b
 
 > Status: version 1.0. The full user's guide is [docs/manual](docs/manual) (built as a PDF into each release);
 > in the editor, the **?** at the top left of the panel opens a guide to the front panel.
-> Front panel, MIDI sync, librarian, mod matrix and sequencer are done and in use with a TEO-5.
+> Front panel, MIDI sync, librarian, mod matrix and sequencer are done and in use with a TEO-5. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
 ## Librarian
 
