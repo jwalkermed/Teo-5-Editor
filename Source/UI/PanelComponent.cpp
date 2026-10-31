@@ -305,10 +305,7 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     label ("Amp", 1221, 848, 7.8f, left);
     label ("Filter+Amp", 1221, 865, 7.8f, left);
     label ("Filter+Gate", 1221, 883, 7.8f, left);
-    {
-        auto& route = addCycle ("envRoute", 1181, 901, false);
-        route.setBounds (route.getBounds().withSizeKeepingCentre (32, 32));
-    }
+    addCycle ("envRoute", 1181, 901, false); // the ENV 1 / ENV 2 routing button, the size of the others
 
     // ================= Bottom strip =================
     addToggle ("glideOn", 192, 955, true);
@@ -340,7 +337,7 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     {
         auto& pb = addButton (progX[i], 954, false);
         programButtons[i] = &pb;
-        pb.litWhen = [this, i] { return bankSelectMode ? (bank - 1 == i) : (! locationUnknown && program - 1 == i); };
+        pb.litWhen = [this, i] { return bankSelectMode ? (bank - 1 == i) : (program - 1 == i); };
         pb.onClick = [this, i] { selectProgram (i); };
     }
 
@@ -526,7 +523,6 @@ void PanelComponent::bindLfoControls()
 
 void PanelComponent::selectProgram (int index)
 {
-    locationUnknown = false;
     if (bankSelectMode)
     {
         bank = index + 1;
@@ -543,7 +539,6 @@ void PanelComponent::selectProgram (int index)
 
 void PanelComponent::stepProgram (int bankDelta, int patchDelta)
 {
-    locationUnknown = false;
     // Banks 1-16 x patches 1-16, wrapping at both ends.
     int index = (bank - 1) * 16 + (program - 1) + bankDelta * 16 + patchDelta;
     index = (index % 256 + 256) % 256;
@@ -557,7 +552,6 @@ void PanelComponent::stepProgram (int bankDelta, int patchDelta)
 
 void PanelComponent::stepThroughAllBanks (int bankDelta, int patchDelta)
 {
-    locationUnknown = false;
     int index = ((factoryBanks ? 16 : 0) + bank - 1) * 16 + (program - 1) + bankDelta * 16 + patchDelta;
     index = (index % 512 + 512) % 512; // 32 banks x 16 programs, wrapping at both ends
     factoryBanks = index / 256 > 0;
@@ -572,7 +566,6 @@ void PanelComponent::stepThroughAllBanks (int bankDelta, int patchDelta)
 
 void PanelComponent::goTo (int newBank, int newProgram, bool factory)
 {
-    locationUnknown = false;
     factoryBanks = factory;
     bank = juce::jlimit (1, 16, newBank);
     program = juce::jlimit (1, 16, newProgram);
@@ -585,27 +578,13 @@ void PanelComponent::goTo (int newBank, int newProgram, bool factory)
 
 void PanelComponent::showProgram (bool factory)
 {
-    locationUnknown = false;
     factoryBanks = factory;
-    bankSelectMode = false;
-    updateProgramDisplay();
-}
-
-void PanelComponent::showUnknownLocation()
-{
-    locationUnknown = true;
     bankSelectMode = false;
     updateProgramDisplay();
 }
 
 void PanelComponent::updateProgramDisplay()
 {
-    if (locationUnknown)
-    {
-        sevenSeg.setText ("---"); // the synth's sound isn't one the library knows: no program button lit
-        repaint();
-        return;
-    }
     // Bank digit + two-digit program, e.g. "101". Banks 10-16 show as A-G (as printed on the panel).
     const juce::String bankChar = bank <= 9 ? juce::String (bank) : juce::String::charToString ((juce::juce_wchar) ('A' + bank - 10));
     sevenSeg.setText (bankChar + juce::String (program).paddedLeft ('0', 2));

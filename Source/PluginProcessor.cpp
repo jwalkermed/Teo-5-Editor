@@ -12,29 +12,7 @@ TEO5Processor::TEO5Processor()
     midiSync = std::make_unique<MidiSync> (apvts, programState);
     transfer = std::make_unique<HardwareTransfer> (*midiSync, *library);
     seqPlayValue = apvts.getRawParameterValue ("seqPlay");
-    // Which bank and program the synth's sound comes from, as far as the library's fetched banks know.
-    midiSync->findInLibrary = [this] (const juce::MemoryBlock& raw, const juce::String& name) -> std::optional<MidiSync::FoundProgram>
-    {
-        std::optional<MidiSync::FoundProgram> byName;
-        int sameName = 0;
-        for (auto& b : library->banks())
-        {
-            if (b.kind != LibraryBank::Kind::Hardware)
-                continue;
-            for (int i = 0; i < (int) b.programs.size() && i < 16; ++i)
-            {
-                const auto& p = b.programs[(size_t) i];
-                if (p.raw == nullptr || p.unsent)
-                    continue; // only what the library knows is on the synth
-                if (midiSync->sameSound (*p.raw, raw))
-                    return MidiSync::FoundProgram { b.hardwareBank, i + 1, b.factory, *p.raw };
-                if (name.isNotEmpty() && p.name == name && ++sameName == 1)
-                    byName = MidiSync::FoundProgram { b.hardwareBank, i + 1, b.factory, *p.raw };
-            }
-        }
-        return sameName == 1 ? byName : std::nullopt; // an edited sound: only if its name is unique
-    };
-    midiSync->fetchSynthUnlessRestored(); // a new instance starts from what's on the synth
+    midiSync->fetchSynthUnlessRestored(); // a new instance starts on User 1, program 01
 }
 
 TEO5Processor::~TEO5Processor()

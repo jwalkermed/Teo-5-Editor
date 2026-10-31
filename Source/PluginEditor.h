@@ -54,7 +54,7 @@ private:
     juce::MemoryBlock currentProgramOrFetch (const juce::String& title); // empty (and fetching) if none yet
     void toggleCompare();
     void revertProgram(); // REVERT: the program as loaded (or last written), to the edit buffer
-    void showSynthLocation(); // BANK, FACTORY, the program buttons and the display, or "---" if the location isn't known
+    void showSynthLocation(); // BANK, FACTORY, the program buttons and the display, from ProgramState
     void tapTempo();
     void writeCurrentProgram();
     void renameCurrentProgram();

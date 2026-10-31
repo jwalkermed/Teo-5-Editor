@@ -3,6 +3,14 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.0.12 (2026-10-31)
+
+**Changed**
+- A new editor (a new track, not a saved project) now opens on **User bank 1, program 01**: it selects that program
+  on the TEO-5 and reads it into the panel. This replaces 1.0.10's look-up of the synth's current sound in the
+  library. Saved projects still restore their own sound.
+- The envelope routing button (below the ENV 1 / ENV 2 lights) is now the same size as the other buttons.
+
 ## 1.0.11 (2026-10-31)
 
 **Changed**

@@ -414,7 +414,7 @@ void MidiSync::pollSynth()
         const juce::ScopedLock sl (dumpLock);
         busy = waiterActive;
     }
-    if (! followSynth || pauseFollowing || busy || ! hasOutput() || isProbing() || synthRecording || startupFetch
+    if (! followSynth || pauseFollowing || busy || ! hasOutput() || isProbing() || synthRecording
         || pendingRequestTicks > 0 || ! expectedReplies.empty() || ! SysEx::isProgramSize (programState.raw.getSize())
         || layout.isEmpty() || now - lastSentChangeAt < 1000)
         return;
@@ -520,8 +520,9 @@ void MidiSync::fetchSynthUnlessRestored()
             // Not if a project was restored, or the editor already sent or received a program meanwhile.
             if (weak != nullptr && ! weak->stateRestored && ! weak->programActivity && ! weak->isProbing() && weak->hasOutput())
             {
-                weak->startupFetch = true;
-                weak->requestEditBuffer();
+                weak->selectProgram (1, 1, false); // a new editor starts on User 1, program 01 (and reads it)
+                if (weak->onProgramChanged)
+                    weak->onProgramChanged();
             }
         });
     });
@@ -572,7 +573,6 @@ void MidiSync::selectProgram (int bank, int program, bool factory)
     programState.bank = bank;
     programState.program = program;
     programState.factory = factory;
-    programState.locationKnown = true;
 
     const auto a = addressFor (bank, program, factory);
     const int ch = settings.channel;
@@ -633,7 +633,6 @@ void MidiSync::handleMessage (const juce::MidiMessage& m)
     else if (m.isProgramChange())
     {
         // The synth changed program: follow it on the panel and refresh the edit buffer.
-        programState.locationKnown = true;
         pollCandidate.reset();
         programState.factory = lastBankSelect >= 16;
         programState.bank = (lastBankSelect % 16) + 1;
@@ -704,8 +703,6 @@ void MidiSync::handleSysEx (const juce::MidiMessage& m)
                     break;
                 }
                 applyProgramData (parsed.data);
-                if (std::exchange (startupFetch, false))
-                    followStartupProgram();
             }
             break;
 
@@ -805,25 +802,6 @@ std::optional<int> MidiSync::storedValue (const juce::String& paramId) const
     if (f == nullptr || def == nullptr || ! SysEx::isProgramSize (raw.getSize()))
         return std::nullopt;
     return juce::jlimit (def->minValue, def->maxValue, layout.read (raw, *f));
-}
-
-// The program the editor opened on: show its bank and program if the library knows it. A sound edited on the synth
-// is found by its name; then the library's copy is the stored version, so the OLED shows EDITED.
-void MidiSync::followStartupProgram()
-{
-    const auto raw = programState.raw;
-    auto found = findInLibrary ? findInLibrary (raw, programState.name) : std::nullopt;
-    programState.locationKnown = found.has_value();
-    if (found)
-    {
-        programState.bank = found->bank;
-        programState.program = found->program;
-        programState.factory = found->factory;
-        if (SysEx::isProgramSize (found->stored.getSize()) && ! sameSound (found->stored, raw))
-            programState.raw = found->stored;
-    }
-    if (onProgramChanged)
-        onProgramChanged();
 }
 
 bool MidiSync::sameSound (const juce::MemoryBlock& a, const juce::MemoryBlock& b) const

@@ -171,7 +171,6 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
             ps.bank = written->panelBank;
             ps.program = program;
             ps.factory = false;
-            ps.locationKnown = true;
             browseLibraryBank = -1;
         }
         setLibraryOpen (false);
@@ -355,7 +354,7 @@ void TEO5Editor::writeCurrentProgram()
     if (const auto& banks = processor.getLibrary().banks(); juce::isPositiveAndBelow (ref.bank, (int) banks.size())
                                                              && banks[(size_t) ref.bank].kind == teo5::LibraryBank::Kind::Disk)
         from = banks[(size_t) ref.bank].name + " " + juce::String (ref.index + 1).paddedLeft ('0', 2);
-    else if (ps.locationKnown)
+    else
         from = teo5::HardwareTransfer::locationName ({ ps.bank, panel.isFactory() }, ps.program);
     if (processor.getMidiSync().isEdited())
         from += from.isEmpty() ? "your edit" : " (edited)";
@@ -531,11 +530,7 @@ void TEO5Editor::closeLeftDrawersExcept (juce::Component& keep)
 
 void TEO5Editor::showSynthLocation()
 {
-    const auto& ps = processor.getProgramState();
-    if (ps.locationKnown)
-        panel.showProgram (ps.factory);
-    else
-        panel.showUnknownLocation();
+    panel.showProgram (processor.getProgramState().factory);
 }
 
 void TEO5Editor::setLibraryOpen (bool shouldBeOpen)

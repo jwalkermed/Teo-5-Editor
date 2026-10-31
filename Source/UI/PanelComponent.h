@@ -29,8 +29,6 @@ public:
     bool isFactory() const { return factoryBanks; }
     // Reflect a program change made on the synth (bank/program are already updated); sends nothing.
     void showProgram (bool factory);
-    // The editor opened on a sound the library doesn't know: the display shows "---" and no program button is lit.
-    void showUnknownLocation();
     // Same as the BANK/PATCH -/+ buttons: select the next/previous program (wraps) and send the program change.
     void stepBankOrPatch (int bankDelta, int patchDelta) { stepProgram (bankDelta, patchDelta); }
     // Like stepBankOrPatch, but through all 32 banks in turn: User 1-16, then Factory 1-16 (FACTORY follows).
@@ -115,7 +113,6 @@ private:
     PanelButton* factoryButton = nullptr;
     bool bankSelectMode = false;
     bool factoryBanks = false;
-    bool locationUnknown = false;
 
     OledDisplay oled;
     SevenSegment sevenSeg;

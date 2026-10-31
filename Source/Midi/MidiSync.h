@@ -28,7 +28,6 @@ struct ProgramState
     int sequenceVersion = 0; // bumped whenever a program (and so its sequence) is loaded or received
     int liveSequenceVersion = 0; // bumped when the synth's own recording changes the sequence byte by byte
     Sequence beforeSynthRecording; // the sequence when RECORD last turned on at the TEO-5 (one undo step per pass)
-    bool locationKnown = true; // false when the editor opened on a sound it couldn't find in the library's banks
 };
 
 struct MidiSettings
@@ -70,12 +69,8 @@ public:
     // TEO-5's edit buffer match the saved program. Never writes to memory.
     void restoreSynthFromState();
     // A new plug-in instance: if no saved state is restored within a moment (a new track rather than a saved
-    // project), fetch the program that's on the TEO-5 so the editor starts from what the synth is playing.
+    // project), select User 1, program 01 on the TEO-5 (program change, then the program is read into the panel).
     void fetchSynthUnlessRestored();
-    // The TEO-5 doesn't say which bank and program it's on, so the program read at startup is looked up in the
-    // library's fetched banks (set by the processor; message thread). `stored` is the library's copy of the program.
-    struct FoundProgram { int bank = 1, program = 1; bool factory = false; juce::MemoryBlock stored; };
-    std::function<std::optional<FoundProgram> (const juce::MemoryBlock& raw, const juce::String& name)> findInLibrary;
     // Two programs make the same sound: every mapped parameter, the name and the sequence are equal.
     bool sameSound (const juce::MemoryBlock& a, const juce::MemoryBlock& b) const;
     // The TEO-5 follows external MIDI clock (Global Clock Mode In, In Thru or In No S/S), as last read from it.
@@ -231,8 +226,6 @@ private:
     std::atomic<juce::uint32> ignoreSeqPlayUntil { 0 };
     std::atomic<bool> stateRestored { false };
     std::atomic<bool> programActivity { false }; // anything sent or received for the program since startup
-    bool startupFetch = false; // the edit buffer was requested at startup: find its location when it arrives
-    void followStartupProgram();
     bool synthRecording = false; // seqRecord as last seen by followSynthRecording
     void pushSeqPlay (int value); // audio thread
 

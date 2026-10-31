@@ -435,10 +435,8 @@ and band-pass, envelope options, voice settings, tunings and more.</p>
   <li><b>Projects remember the sound.</b> When you save, the project stores the program, including its sequence.
   When you open the project again, the editor sends that sound to the TEO-5's edit buffer about half a second later
   (it never writes memory).</li>
-  <li>A new instance on a fresh track reads whatever sound is on the synth. The TEO-5 doesn't say which bank and
-  program that is, so the editor looks for the sound in the banks the library has fetched and sets BANK, FACTORY,
-  the program buttons and the display to match. A sound edited on the synth is found by its name and shows EDITED;
-  a sound the library doesn't know shows <b>---</b> on the display.</li>
+  <li>A new instance on a fresh track opens on <b>User bank 1, program 01</b>: it selects that program on the TEO-5
+  and reads it into the panel.</li>
   <li><b>Live's transport and the sequencer:</b> with PLAY on in the sequencer, each Live start restarts the sequence
   at step 1 and Live's stop stops it.</li>
   <li><b>Recording the sequencer into Live:</b> turn on <i>MIDI Arp Notes</i> in the GLOBAL drawer, make a MIDI track
