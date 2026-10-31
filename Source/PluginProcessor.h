@@ -52,6 +52,8 @@ public:
     std::atomic<double> hostBpm { 0.0 }; // the DAW's tempo (0 = unknown); its MIDI clock drives the TEO-5
     // Song position where the TEO-5's sequence last started at step 1 (the playhead counts from here).
     std::atomic<double> seqStartPpq { 0.0 };
+    // The editor's width as the user last sized it (0 = default), kept while the window is closed and in the project.
+    std::atomic<int> editorWidth { 0 };
     teo5::LibraryModel& getLibrary() { return *library; }
     teo5::HardwareTransfer& getTransfer() { return *transfer; }
 

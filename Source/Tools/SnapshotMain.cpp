@@ -81,9 +81,27 @@ int main (int argc, char* argv[])
         return 0;
     }
 
+    const juce::String mode = argc > 3 ? juce::String (argv[3]) : juce::String();
+    if (mode == "size")
+    {
+        // The editor reopens at the size it was given, also after the state is saved and loaded (prints the widths).
+        std::unique_ptr<juce::AudioProcessorEditor> first (processor.createEditor());
+        std::printf ("new %d", first->getWidth());
+        first->setSize (2100, juce::roundToInt (2100 * 590.0 / 1814.0));
+        first.reset();
+        std::unique_ptr<juce::AudioProcessorEditor> second (processor.createEditor());
+        std::printf (" | reopened %d", second->getWidth());
+        second.reset();
+        juce::MemoryBlock state;
+        processor.getStateInformation (state);
+        TEO5Processor loaded;
+        loaded.setStateInformation (state.getData(), (int) state.getSize());
+        std::unique_ptr<juce::AudioProcessorEditor> third (loaded.createEditor());
+        std::printf (" | from saved state %d\n", third->getWidth());
+        return 0;
+    }
     std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditor());
     editor->setVisible (true);
-    const juce::String mode = argc > 3 ? juce::String (argv[3]) : juce::String();
     if (mode == "library")
     {
         // Demo content for the screenshot.
@@ -181,6 +199,8 @@ int main (int argc, char* argv[])
             e->setGlobalOpen (true);
         if (mode == "program")
             e->setProgramOpen (true);
+        if (mode == "guide")
+            e->setGuideOpen (true);
     }
 
     if (mode == "modmatrix" && argc > 4)

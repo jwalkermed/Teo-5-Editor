@@ -22,6 +22,7 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
       programDrawer (teo5::SettingsDrawer::Kind::Program, p.getMidiSync(), p.getProgramState(), p.getAPVTS())
 {
     addAndMakeVisible (panel);
+    addAndMakeVisible (guideButton); // behind the drawers, which cover it
     addChildComponent (drawer);
     addChildComponent (library);
     addChildComponent (modMatrix);
@@ -34,6 +35,10 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
     addAndMakeVisible (sequencerTab);
     addAndMakeVisible (globalTab);
     addAndMakeVisible (programTab);
+    addChildComponent (guide);
+    guideButton.setTooltip ("How the front panel works");
+    guideButton.onClick = [this] { setGuideOpen (! guide.isVisible()); };
+    guide.onClose = [this] { setGuideOpen (false); };
     drawerTab.setTooltip ("MIDI settings");
     libraryTab.setTooltip ("Library");
     modMatrixTab.setTooltip ("Mod matrix");
@@ -147,6 +152,9 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
 
     const double aspect = (double) PanelComponent::designWidth / (double) PanelComponent::designHeight;
     const int defaultHeight = juce::roundToInt (defaultWidth / aspect);
+    // Reopen at the size the user last chose (read now: setting the limits below resizes the editor).
+    const int initialWidth = juce::jlimit (juce::roundToInt (defaultWidth * 0.7), juce::roundToInt (defaultWidth * 1.5),
+                                           p.editorWidth > 0 ? p.editorWidth.load() : defaultWidth);
 
     setResizable (true, true);
     setResizeLimits (juce::roundToInt (defaultWidth * 0.7), juce::roundToInt (defaultHeight * 0.7),
@@ -154,7 +162,8 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
     if (auto* c = getConstrainer())
         c->setFixedAspectRatio (aspect);
 
-    setSize (defaultWidth, defaultHeight);
+    setSize (initialWidth, juce::roundToInt (initialWidth / aspect));
+    sizeRestored = true;
 
     // Arrow keys step through programs while no drawer is open; clicks anywhere bring the focus back here.
     setWantsKeyboardFocus (true);
@@ -386,6 +395,7 @@ void TEO5Editor::setProgramOpen (bool shouldBeOpen) { setRightDrawerOpen (progra
 // One right-hand drawer at a time.
 void TEO5Editor::closeRightDrawersExcept (juce::Component& keep)
 {
+    setGuideOpen (false);
     for (auto [d, tab] : { std::pair<juce::Component*, DrawerTab*> { &drawer, &drawerTab }, { &globalDrawer, &globalTab },
                            { &programDrawer, &programTab } })
         if (d != &keep && d->isVisible())
@@ -409,6 +419,7 @@ void TEO5Editor::setRightDrawerOpen (juce::Component& d, DrawerTab& tab, bool sh
 // One left-hand drawer at a time.
 void TEO5Editor::closeLeftDrawersExcept (juce::Component& keep)
 {
+    setGuideOpen (false);
     if (&keep != &library && library.isVisible()) setLibraryOpen (false);
     if (&keep != &modMatrix && modMatrix.isVisible()) setModMatrixOpen (false);
     if (&keep != &sequencer && sequencer.isVisible()) setSequencerOpen (false);
@@ -562,6 +573,27 @@ void TEO5Editor::setSequencerOpen (bool shouldBeOpen)
     resized();
 }
 
+// The guide covers the panel; the ? stays on top of it while it's open, and goes back behind the drawers after.
+void TEO5Editor::setGuideOpen (bool shouldBeOpen)
+{
+    if (shouldBeOpen == guide.isVisible())
+        return;
+    guide.setVisible (shouldBeOpen);
+    guideButton.setToggleState (shouldBeOpen, juce::dontSendNotification);
+    if (shouldBeOpen)
+    {
+        guide.scrollToTop();
+        guide.toFront (true);
+        guideButton.toFront (false);
+    }
+    else
+    {
+        guideButton.toBehind (&drawer);
+        if (! anyDrawerOpen())
+            grabKeyboardFocus();
+    }
+}
+
 bool TEO5Editor::anyDrawerOpen() const
 {
     for (const juce::Component* d : std::initializer_list<const juce::Component*> { &drawer, &library, &modMatrix, &sequencer,
@@ -573,6 +605,11 @@ bool TEO5Editor::anyDrawerOpen() const
 
 bool TEO5Editor::keyPressed (const juce::KeyPress& key)
 {
+    if (guide.isVisible() && key == juce::KeyPress::escapeKey)
+    {
+        setGuideOpen (false);
+        return true;
+    }
     if (anyDrawerOpen() || key.getModifiers().isAnyModifierKeyDown())
         return false;
     if (key == juce::KeyPress::leftKey)  { panel.stepBankOrPatch (0, -1); return true; }
@@ -596,10 +633,19 @@ void TEO5Editor::paint (juce::Graphics& g)
 
 void TEO5Editor::resized()
 {
+    if (sizeRestored)
+        processor.editorWidth = getWidth();
     const float scale = (float) getWidth() / (float) PanelComponent::designWidth;
     panel.setTransform (juce::AffineTransform::scale (scale));
 
     const int cheek = juce::roundToInt (17.0f * scale);
+
+    // The ? and the guide are laid out for a 1700-px-wide editor and scaled with it.
+    const auto guideScale = juce::AffineTransform::scale ((float) getWidth() / (float) defaultWidth);
+    guideButton.setBounds (21, 21, 22, 22);
+    guideButton.setTransform (guideScale);
+    guide.setBounds (20, 12, defaultWidth - 20 - 40, 553 - 24);
+    guide.setTransform (guideScale);
     const int drawerW = juce::jmin (340, getWidth() / 3);
     drawer.setBounds (getWidth() - cheek - drawerW, 0, drawerW, getHeight());
     const int settingsW = juce::jmin (380, getWidth() / 3);

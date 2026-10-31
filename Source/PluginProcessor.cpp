@@ -107,6 +107,8 @@ void TEO5Processor::getStateInformation (juce::MemoryBlock& dest)
     state.setProperty ("bank", programState.bank, nullptr);
     state.setProperty ("program", programState.program, nullptr);
     state.setProperty ("factory", programState.factory, nullptr);
+    if (editorWidth > 0)
+        state.setProperty ("editorWidth", editorWidth.load(), nullptr);
     if (programState.raw.getSize() > 0)
         state.setProperty ("rawProgram", programState.raw.toBase64Encoding(), nullptr);
     state.removeChild (state.getChildWithName ("MIDI"), nullptr);
@@ -133,6 +135,8 @@ void TEO5Processor::setStateInformation (const void* data, int size)
             settings.fromValueTree (state.getChildWithName ("MIDI"));
             state.removeChild (state.getChildWithName ("MIDI"), nullptr);
             state.removeProperty ("rawProgram", nullptr);
+            editorWidth = (int) state.getProperty ("editorWidth", editorWidth.load());
+            state.removeProperty ("editorWidth", nullptr);
 
             apvts.replaceState (state);
             midiSync->applySettings (settings);

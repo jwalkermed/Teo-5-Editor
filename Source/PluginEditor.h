@@ -10,6 +10,7 @@
 #include "UI/LibraryDrawer.h"
 #include "UI/ModMatrixDrawer.h"
 #include "UI/SequencerDrawer.h"
+#include "UI/PanelGuide.h"
 
 class TEO5Editor : public juce::AudioProcessorEditor
 {
@@ -34,6 +35,7 @@ public:
     void showModulationMenu (const juce::String& paramId);
     void addModulation (int source, int destination); // first free slot, then the mod matrix opens on it
     void setSequencerOpen (bool);
+    void setGuideOpen (bool); // the front panel guide (the ? at the top left)
 
 private:
     // Narrow tab on an end cheek that opens a drawer.
@@ -63,6 +65,8 @@ private:
 
     TEO5Processor& processor;
     teo5::PanelComponent panel;
+    teo5::PanelGuide::HelpButton guideButton;
+    teo5::PanelGuide guide;
     teo5::MidiSettingsDrawer drawer;
     teo5::LibraryDrawer library;
     teo5::ModMatrixDrawer modMatrix;
@@ -75,6 +79,7 @@ private:
     void setRightDrawerOpen (juce::Component&, DrawerTab&, bool);
     juce::TooltipWindow tooltips { this, 600 };
 
+    bool sizeRestored = false; // until the saved size is applied, resizes aren't the user's
     std::vector<double> tapTimes; // ms, last few TAP TEMPO presses
     bool comparing = false;
     juce::MemoryBlock compareStash; // the edited program while COMPARE shows the stored one
