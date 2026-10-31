@@ -44,6 +44,7 @@ public:
     {
         bool isBank = false;
         int bank = -1, index = -1;
+        bool isNew = false; // the empty slot after the last program of one of your banks (index = number of programs)
     };
     // Pane 0 lists the TEO-5's banks (fetched User/Factory banks), pane 1 the user's own banks (imported/custom).
     static constexpr int numPanes = 2;
@@ -67,13 +68,31 @@ public:
     // Banks can be dragged to a new place within their pane.
     void beginBankDrag (int pane, int row);
     void dropBankAt (int pane, int row, bool below);
-    // The icons after a program's star: 0 write to TEO-5, 1 export .syx, 2 rename, 3 delete.
+    // The icons after a program's star: 0 export .syx, 1 rename, 2 delete.
     void rowIconClicked (int pane, int row, int icon);
     int dropBankFor (int pane, int row) const;
     int dragCount() const { return (int) selection.size(); }
     void selectPrograms (const juce::Array<ProgramRef>&);
     // Load a library program into the TEO-5 edit buffer (never writes memory); it becomes the "loaded" one.
     void loadToEditBuffer (ProgramRef);
+
+    // ---- Saving (the panel's WRITE) ----
+    // The library becomes a picker: clicking a slot in a TEO-5 User bank or in one of your banks chooses where `raw`
+    // goes, and that slot's program goes into the edit buffer so it can be auditioned. `current` (the panel's program,
+    // if the library has it) is selected; if it isn't in a User bank or one of your banks, User 1 slot 01 is chosen.
+    void beginSave (const juce::MemoryBlock& raw, const juce::String& name, const juce::String& from, ProgramRef current);
+    bool isSaving() const { return saving; }
+    void confirmSave(); // writes (TEO-5 slot) or stores (your bank), loads it into the edit buffer, then onSaveFinished
+    void cancelSave();  // puts your edit back in the edit buffer, then onSaveFinished
+    bool isSaveTarget (const Row&) const;
+    // The editor closes the drawer and updates the panel. saved = false: cancelled. `bank`/`program`: the TEO-5
+    // location written, if the program went to a User bank.
+    std::function<void (bool saved, std::optional<HardwareTransfer::BankAddress> bank, int program)> onSaveFinished;
+    juce::Component& getSavePanel();
+    // Closing the drawer with LIBRARY: if TEO-5 User banks have changes not sent, ask whether to send them first.
+    // `close` runs unless the user cancels.
+    void closeWithUnsentCheck (std::function<void()> close);
+    int unsentCount() const;
 
 private:
     class ListView;
@@ -91,8 +110,12 @@ private:
     void importSyx (int intoBank);
     void exportPrograms (juce::Array<ProgramRef>);
     void exportBank (int bank);
-    void addCurrentProgram();
     void writeToLocation (ProgramRef);
+    void saveAllChanges(); // Save all changes: writes every NOT SENT User-bank slot, after listing what it overwrites
+    std::vector<HardwareTransfer::Write> unsentWrites (juce::StringArray& bankUuids, juce::StringArray& lines) const;
+    void setSaveTarget (ProgramRef);
+    juce::String locationOf (ProgramRef) const;
+    void showHelp (bool);
     void sendBankToHardware (int bank);
     void renameProgram (ProgramRef);
     void editTags (ProgramRef);
@@ -110,7 +133,8 @@ private:
     ProgramState& programState;
 
     juce::Label title { {}, "LIBRARY" };
-    juce::TextButton fetchButton { "Fetch" }, importButton { "Import" }, addButton { "+ Current" }, newBankButton { "+ Bank" };
+    juce::TextButton helpButton { "?" };
+    juce::TextButton fetchButton { "Fetch" }, importButton { "Import" }, saveAllButton { "Save all changes" }, newBankButton { "New Bank" };
     juce::TextButton undoButton { "Undo" }, redoButton { "Redo" };
     juce::TextButton pullAllButton { juce::String::fromUTF8 ("\xe2\x86\x93 TEO-5 \xe2\x86\x92 Library (all User banks)") },
                      pushAllButton { juce::String::fromUTF8 ("\xe2\x86\x91 Library \xe2\x86\x92 TEO-5 (all User banks)") };
@@ -137,6 +161,23 @@ private:
     std::unique_ptr<juce::FileChooser> chooser;
     juce::StringArray sendingBankUuids; // their NOT SENT marks clear once the send completes
     int draggedBank = -1;
+
+    // Saving (WRITE).
+    class SavePanel;
+    std::unique_ptr<SavePanel> savePanel;
+    bool saving = false, auditioned = false;
+    juce::MemoryBlock saveRaw;
+    juce::String saveName, saveFrom;
+    ProgramRef saveTarget; // index may be the bank's size: the empty slot after one of your banks' programs
+
+    struct HelpPanel : juce::Component
+    {
+        HelpPanel();
+        void paint (juce::Graphics&) override;
+        void resized() override;
+        juce::TextEditor text;
+        juce::TextButton close { "Close" };
+    } helpPanel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LibraryDrawer)
 };

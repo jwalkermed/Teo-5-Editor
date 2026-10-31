@@ -423,15 +423,19 @@ ModMatrixDrawer::ModMatrixDrawer (juce::AudioProcessorValueTreeState& s) : apvts
     for (int i = 1; i <= numSlots; ++i)
         addAndMakeVisible (rows.add (new SlotRow (*this, apvts, i)));
 
-    for (auto* b : { &undoButton, &redoButton })
+    for (auto* b : { &clearAllButton, &revertButton, &undoButton, &redoButton })
     {
         b->setLookAndFeel (&drawerLookAndFeel());
         addAndMakeVisible (b);
     }
     undoButton.onClick = [this] { undoRedo (true); };
     redoButton.onClick = [this] { undoRedo (false); };
+    clearAllButton.onClick = [this] { clearAll(); };
+    revertButton.onClick = [this] { revertAll(); };
     undoButton.setTooltip ("Undo the last change to the mod matrix");
     redoButton.setTooltip ("Redo");
+    clearAllButton.setTooltip ("Clear all 16 slots: source Off, amount none, No Dest (Undo brings them back)");
+    revertButton.setTooltip ("Put all 16 slots back as stored in the program (Undo brings your changes back)");
     stable = capture();
 
     timerCallback();
@@ -440,8 +444,8 @@ ModMatrixDrawer::ModMatrixDrawer (juce::AudioProcessorValueTreeState& s) : apvts
 
 ModMatrixDrawer::~ModMatrixDrawer()
 {
-    undoButton.setLookAndFeel (nullptr);
-    redoButton.setLookAndFeel (nullptr);
+    for (auto* b : { &clearAllButton, &revertButton, &undoButton, &redoButton })
+        b->setLookAndFeel (nullptr);
 }
 
 int ModMatrixDrawer::activeCount() const
@@ -645,6 +649,39 @@ void ModMatrixDrawer::undoRedo (bool undo)
     redoButton.setEnabled (! redoStack.empty());
 }
 
+void ModMatrixDrawer::clearAll()
+{
+    State s {};
+    for (int slot = 1; slot <= numSlots; ++slot)
+        s[(size_t) (slot - 1) * 3 + 1] = amountCentre; // amount none (source and destination 0: Off, No Dest)
+    if (s == capture())
+        return;
+    userEdit (0, "Clear all");
+    clearFocus();
+    apply (s);
+    historyMessage = "All 16 slots cleared (Undo brings them back)";
+    historyUntil = juce::Time::getMillisecondCounter() + 5000;
+    updateHint();
+}
+
+void ModMatrixDrawer::revertAll()
+{
+    auto s = capture();
+    const char* parts[] = { "Src", "Amt", "Dest" };
+    for (int slot = 1; slot <= numSlots; ++slot)
+        for (int k = 0; k < 3; ++k)
+            if (auto v = storedValue ? storedValue (slotId (slot, parts[k])) : std::nullopt)
+                s[(size_t) (slot - 1) * 3 + (size_t) k] = *v;
+    if (s == capture())
+        return;
+    userEdit (0, "Revert");
+    clearFocus();
+    apply (s);
+    historyMessage = "All 16 slots back as stored in the program";
+    historyUntil = juce::Time::getMillisecondCounter() + 5000;
+    updateHint();
+}
+
 void ModMatrixDrawer::paintOverChildren (juce::Graphics& g)
 {
     if (juce::isPositiveAndBelow (focusedSlot - 1, rows.size()))
@@ -681,12 +718,15 @@ void ModMatrixDrawer::resized()
     auto r = getLocalBounds().reduced (12, 0);
     r.removeFromRight (2);
     auto top = r.removeFromTop (34);
-    title.setBounds (top.removeFromLeft (160));
-    redoButton.setBounds (top.removeFromRight (64).withSizeKeepingCentre (64, 22));
-    top.removeFromRight (6);
-    undoButton.setBounds (top.removeFromRight (64).withSizeKeepingCentre (64, 22));
-    top.removeFromRight (12);
-    summary.setBounds (top);
+    title.setBounds (top.removeFromLeft (140));
+    // Right to left: the active-slot count, Redo, Undo, Revert, Clear all.
+    summary.setBounds (top.removeFromRight (112));
+    top.removeFromRight (8);
+    for (auto* b : { &redoButton, &undoButton, &revertButton, &clearAllButton })
+    {
+        b->setBounds (top.removeFromRight (64).withSizeKeepingCentre (64, 22));
+        top.removeFromRight (6);
+    }
 
     r.removeFromTop (24); // column headings
     hint.setBounds (r.removeFromBottom (36)); // two lines at the larger size

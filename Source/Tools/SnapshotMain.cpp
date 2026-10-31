@@ -57,12 +57,13 @@ int main (int argc, char* argv[])
     }
     if (argc > 3 && juce::String (argv[3]) == "oledhome")
     {
-        // The OLED's home page; argv[4] = BPM label (e.g. "EXT BPM"), argv[5] = BPM.
+        // The OLED's home page; argv[4] = BPM label (e.g. "EXT BPM"), argv[5] = BPM, argv[6] = "edited" for EDITED.
         teo5::OledDisplay oled;
         oled.setBounds (0, 0, 133, 104);
         teo5::OledDisplay::HomePage home;
         home.bpmLabel = argc > 4 ? juce::String (argv[4]) : juce::String ("BPM");
         home.bpm = argc > 5 ? juce::String (argv[5]) : juce::String ("120");
+        home.edited = argc > 6 && juce::String (argv[6]) == "edited";
         oled.setHome (home);
         auto image = oled.createComponentSnapshot (oled.getLocalBounds(), true, scale);
         out.deleteFile();
@@ -252,18 +253,23 @@ int main (int argc, char* argv[])
 
     if (argc > 4 && juce::String (argv[4]) == "write")
     {
-        // The write-location dialog over the library (argv[5] = an optional second file for it alone).
-        teo5::chooseWriteLocation (editor.get(), "Glacial Pad", 1, 2, processor.getLibrary(), nullptr);
+        // WRITE: the library as a picker, with the Save pop-up over the panel (the panel's program isn't in the
+        // library here, so User 1 slot 01 is chosen to start with). argv[5]: a second file with the pop-up alone.
+        processor.getProgramState().raw = juce::MemoryBlock ((size_t) teo5::SysEx::programSize, true);
+        processor.getProgramState().name = "Glacial Pad";
+        processor.getProgramState().bank = 5; // a bank the demo library doesn't have
+        if (auto* e = dynamic_cast<TEO5Editor*> (editor.get()))
+            e->handlePanelAction ("write");
         juce::MessageManager::getInstance()->runDispatchLoopUntil (200);
-        if (auto* modal = juce::Component::getCurrentlyModalComponent())
-        {
-            auto dlg = modal->createComponentSnapshot (modal->getLocalBounds(), true, scale);
-            juce::File dlgFile = out.getSiblingFile (out.getFileNameWithoutExtension() + "-write.png");
-            dlgFile.deleteFile();
-            juce::FileOutputStream ds (dlgFile);
-            juce::PNGImageFormat().writeImageToStream (dlg, ds);
-            modal->exitModalState (0);
-        }
+        for (auto* c : editor->getChildren())
+            if (c->isVisible() && c->getWidth() == 440 && argc > 5)
+            {
+                auto pop = c->createComponentSnapshot (c->getLocalBounds(), true, scale);
+                juce::File popFile = out.getSiblingFile (juce::String (argv[5]));
+                popFile.deleteFile();
+                juce::FileOutputStream ps (popFile);
+                juce::PNGImageFormat().writeImageToStream (pop, ps);
+            }
     }
     auto image = editor->createComponentSnapshot (editor->getLocalBounds(), true, scale);
     out.deleteFile();

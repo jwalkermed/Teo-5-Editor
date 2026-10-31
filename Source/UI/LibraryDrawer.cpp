@@ -14,15 +14,16 @@ constexpr int rowHeight = 22;
 const juce::String dragDescription = "teo5-programs";
 const juce::String bankDragDescription = "teo5-bank";
 
-// Per-program icons after the favourite star: write to TEO-5, export .syx, rename, delete. Each is iconWidth wide.
-enum class RowIcon { None, Star, Write, Export, Rename, Delete };
-constexpr int starWidth = 22, iconWidth = 20, iconsRight = starWidth + 4 * iconWidth;
+// Per-program icons after the favourite star: export .syx, rename, delete. Each is iconWidth wide.
+enum class RowIcon { None, Star, Export, Rename, Delete };
+constexpr int starWidth = 22, iconWidth = 20, iconsRight = starWidth + 3 * iconWidth;
+const juce::Colour saveAmber (0xffe8a33a); // the slot chosen to save into
 
 RowIcon iconAt (int x)
 {
     if (x < starWidth) return RowIcon::Star;
     if (x >= iconsRight) return RowIcon::None;
-    const RowIcon icons[] = { RowIcon::Write, RowIcon::Export, RowIcon::Rename, RowIcon::Delete };
+    const RowIcon icons[] = { RowIcon::Export, RowIcon::Rename, RowIcon::Delete };
     return icons[(x - starWidth) / iconWidth];
 }
 
@@ -33,18 +34,15 @@ void drawRowIcon (juce::Graphics& g, RowIcon icon, juce::Rectangle<float> box, j
     g.setColour (c);
     switch (icon)
     {
-        case RowIcon::Write: // up arrow: to the synth
         case RowIcon::Export: // down arrow: to a file
         {
-            const bool up = icon == RowIcon::Write;
-            const float s = up ? -1.0f : 1.0f;
-            p.startNewSubPath (ctr.x, ctr.y - 5.0f * s);
-            p.lineTo (ctr.x, ctr.y + 4.0f * s);
-            p.startNewSubPath (ctr.x - 4.0f, ctr.y + 0.5f * s);
-            p.lineTo (ctr.x, ctr.y + 4.5f * s);
-            p.lineTo (ctr.x + 4.0f, ctr.y + 0.5f * s);
+            p.startNewSubPath (ctr.x, ctr.y - 5.0f);
+            p.lineTo (ctr.x, ctr.y + 4.0f);
+            p.startNewSubPath (ctr.x - 4.0f, ctr.y + 0.5f);
+            p.lineTo (ctr.x, ctr.y + 4.5f);
+            p.lineTo (ctr.x + 4.0f, ctr.y + 0.5f);
             g.strokePath (p, juce::PathStrokeType (1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-            g.fillRect (ctr.x - 4.5f, up ? ctr.y - 6.5f : ctr.y + 5.5f, 9.0f, 1.2f); // the line it goes to
+            g.fillRect (ctr.x - 4.5f, ctr.y + 5.5f, 9.0f, 1.2f); // the line it goes to
             break;
         }
         case RowIcon::Rename: // pencil
@@ -154,22 +152,37 @@ public:
             {
                 const ProgramRef ref { row.bank, row.index };
                 const auto* p = model.program (ref);
-                if (p == nullptr)
+                if (p == nullptr && ! row.isNew)
                     continue;
 
                 g.setColour (i % 2 ? juce::Colour (0xff1c1d20) : juce::Colour (0xff202124));
                 g.fillRect (r);
+                const bool target = owner.isSaveTarget (row);
+                const bool blocked = owner.isSaving() && model.isFactoryBank (row.bank); // can't save into a factory bank
                 if (owner.isSelected (ref))
                 {
                     g.setColour (Palette::pinstripe.withAlpha (0.45f));
                     g.fillRect (r);
                 }
-
-                if (p->isEmpty())
+                if (target)
                 {
-                    // An empty slot: its number and "Empty", nothing to click.
+                    g.setColour (saveAmber.withAlpha (0.16f));
+                    g.fillRect (r);
+                    g.setColour (saveAmber);
+                    g.drawRect (r.reduced (1, 0), 2);
+                }
+
+                if (p == nullptr || p->isEmpty())
+                {
+                    // An empty slot: its number and "Empty" (while saving: a place to save into).
                     auto text = r.withTrimmedLeft (iconsRight + 16).withTrimmedRight (6);
-                    if (p->unsent)
+                    if (target)
+                    {
+                        g.setFont (TEO5LookAndFeel::panelFont (7.5f));
+                        g.setColour (saveAmber);
+                        g.drawText ("SAVE HERE", text.removeFromRight (64), juce::Justification::centredRight, false);
+                    }
+                    else if (p != nullptr && p->unsent)
                     {
                         // Deleted from a TEO-5 bank: the synth still has the old program until the bank is sent.
                         g.setColour (Palette::ledOn);
@@ -181,7 +194,9 @@ public:
                     g.setColour (Palette::silkscreen.withAlpha (0.3f));
                     g.drawText (juce::String (row.index + 1).paddedLeft ('0', 2), text.removeFromLeft (24), juce::Justification::centredLeft);
                     g.setFont (juce::FontOptions (13.0f).withStyle ("Italic"));
-                    g.drawText ("Empty", text, juce::Justification::centredLeft, true);
+                    if (owner.isSaving() && ! blocked)
+                        g.setColour (Palette::silkscreen.withAlpha (0.6f));
+                    g.drawText (owner.isSaving() && ! blocked ? "Empty: save here" : "Empty", text, juce::Justification::centredLeft, true);
                     continue;
                 }
 
@@ -191,14 +206,14 @@ public:
                 g.drawText (juce::String::fromUTF8 (p->favorite ? "\xe2\x98\x85" : "\xe2\x98\x86"),
                             r.withWidth (22), juce::Justification::centred);
 
-                // Write / export / rename / delete icons; rename and delete aren't offered in factory banks.
+                // Export / rename / delete icons; rename and delete aren't offered in factory banks.
                 const bool factoryBank = model.isFactoryBank (row.bank);
                 const bool rowHovered = hoverRow == i;
-                for (auto icon : { RowIcon::Write, RowIcon::Export, RowIcon::Rename, RowIcon::Delete })
+                for (auto icon : { RowIcon::Export, RowIcon::Rename, RowIcon::Delete })
                 {
                     if (factoryBank && (icon == RowIcon::Rename || icon == RowIcon::Delete))
                         continue;
-                    const int x = starWidth + iconWidth * ((int) icon - (int) RowIcon::Write);
+                    const int x = starWidth + iconWidth * ((int) icon - (int) RowIcon::Export);
                     const auto box = juce::Rectangle<float> ((float) x, (float) r.getY(), (float) iconWidth, (float) rowHeight);
                     const bool hot = rowHovered && iconAt (hoverX) == icon;
                     drawRowIcon (g, icon, box, hot ? (icon == RowIcon::Delete ? Palette::ledOn : Palette::silkscreen)
@@ -222,7 +237,13 @@ public:
                     const int tw = juce::jmin (text.getWidth() / 3, (int) juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), tags) + 6);
                     g.drawText (tags, text.removeFromRight (tw), juce::Justification::centredRight, true);
                 }
-                if (p->unsent)
+                if (target)
+                {
+                    g.setFont (TEO5LookAndFeel::panelFont (7.5f));
+                    g.setColour (saveAmber);
+                    g.drawText ("SAVE HERE", text.removeFromRight (64), juce::Justification::centredRight, false);
+                }
+                else if (p->unsent)
                 {
                     // Changed here, not yet on the synth: amber edge + tag until the bank is sent.
                     g.setColour (Palette::ledOn);
@@ -233,6 +254,11 @@ public:
                 g.setFont (TEO5LookAndFeel::oledFont (14.0f));
                 g.setColour (Palette::silkscreen);
                 g.drawText (p->name, text, juce::Justification::centredLeft, true);
+                if (blocked)
+                {
+                    g.setColour (juce::Colour (0xff1c1d20).withAlpha (0.65f)); // dimmed: can't save here
+                    g.fillRect (r);
+                }
             }
         }
 
@@ -273,8 +299,15 @@ public:
             return;
         const auto& r = owner.rows (pane)[(size_t) row];
 
+        if (owner.isSaving() && ! r.isBank)
+        {
+            owner.rowClicked (pane, row, e); // chooses where to save
+            return;
+        }
         if (e.mods.isPopupMenu())
         {
+            if (owner.isSaving())
+                return;
             if (! r.isBank && ! owner.isSelected ({ r.bank, r.index }))
                 owner.rowClicked (pane, row, e);
             owner.rowMenu (pane, row);
@@ -285,15 +318,15 @@ public:
             owner.toggleCollapsed (r.bank);
             return;
         }
-        const bool emptySlot = ! r.isBank && owner.getModel().program ({ r.bank, r.index }) != nullptr
-                               && owner.getModel().program ({ r.bank, r.index })->isEmpty();
+        const bool emptySlot = r.isNew || (! r.isBank && owner.getModel().program ({ r.bank, r.index }) != nullptr
+                                           && owner.getModel().program ({ r.bank, r.index })->isEmpty());
         if (! r.isBank && e.x < iconsRight && ! emptySlot)
         {
             const auto icon = iconAt (e.x);
             if (icon == RowIcon::Star)
                 owner.toggleFavourite (pane, row);
             else
-                owner.rowIconClicked (pane, row, (int) icon - (int) RowIcon::Write);
+                owner.rowIconClicked (pane, row, (int) icon - (int) RowIcon::Export);
             return;
         }
         // Keep a multi-selection intact when starting a drag from it.
@@ -318,7 +351,7 @@ public:
 
     void mouseDrag (const juce::MouseEvent& e) override
     {
-        if (! dragStarted && e.getDistanceFromDragStart() > 5 && pendingClickRow >= 0)
+        if (! dragStarted && e.getDistanceFromDragStart() > 5 && pendingClickRow >= 0 && ! owner.isSaving())
         {
             dragStarted = true;
             if (owner.rows (pane)[(size_t) pendingClickRow].isBank)
@@ -360,14 +393,17 @@ public:
     {
         const int row = rowAt (getMouseXYRelative().y);
         if (juce::isPositiveAndBelow (row, (int) owner.rows (pane).size()) && ! owner.rows (pane)[(size_t) row].isBank)
-            if (auto* ep = owner.getModel().program ({ owner.rows (pane)[(size_t) row].bank, owner.rows (pane)[(size_t) row].index });
-                ep != nullptr && ep->isEmpty())
+        {
+            const auto& er = owner.rows (pane)[(size_t) row];
+            if (owner.isSaving())
+                return owner.getModel().isFactoryBank (er.bank) ? "Factory programs can't be changed" : "Click to save here";
+            if (auto* ep = owner.getModel().program ({ er.bank, er.index }); er.isNew || (ep != nullptr && ep->isEmpty()))
                 return "Empty slot: drag or paste a program here";
+        }
         if (juce::isPositiveAndBelow (row, (int) owner.rows (pane).size()) && ! owner.rows (pane)[(size_t) row].isBank)
             switch (iconAt (getMouseXYRelative().x))
             {
                 case RowIcon::Star:   return "Favourite";
-                case RowIcon::Write:  return "Write to TEO-5 memory...";
                 case RowIcon::Export: return "Export as .syx...";
                 case RowIcon::Rename: return owner.getModel().isFactoryBank (owner.rows (pane)[(size_t) row].bank) ? juce::String() : "Rename...";
                 case RowIcon::Delete: return owner.getModel().isFactoryBank (owner.rows (pane)[(size_t) row].bank) ? juce::String() : "Delete";
@@ -448,6 +484,124 @@ private:
     bool dragStarted = false;
 };
 
+// ---- Save panel (WRITE) ---------------------------------------------------------------------------
+// Sits over the front panel, next to the library, while a slot is chosen: what's being saved, where to, what can be
+// heard now, and Confirm / Cancel.
+class LibraryDrawer::SavePanel : public juce::Component
+{
+public:
+    explicit SavePanel (LibraryDrawer& o) : owner (o)
+    {
+        for (auto* b : { &cancel, &confirm })
+        {
+            b->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff2f3237));
+            b->setColour (juce::TextButton::textColourOffId, Palette::silkscreen);
+            addAndMakeVisible (b);
+        }
+        confirm.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff3a3020));
+        cancel.onClick = [this] { owner.cancelSave(); };
+        confirm.onClick = [this] { owner.confirmSave(); };
+        setSize (440, 250);
+    }
+
+    void update()
+    {
+        confirm.setEnabled (owner.saveTarget.isValid());
+        repaint();
+    }
+
+    void paint (juce::Graphics& g) override
+    {
+        auto b = getLocalBounds().toFloat();
+        g.setColour (juce::Colour (0xff26282d));
+        g.fillRoundedRectangle (b, 8.0f);
+        g.setColour (juce::Colour (0xff555a62));
+        g.drawRoundedRectangle (b.reduced (0.5f), 8.0f, 1.0f);
+
+        auto r = getLocalBounds().reduced (18, 14);
+        r.removeFromBottom (40); // buttons
+        g.setColour (Palette::silkscreen);
+        g.setFont (juce::FontOptions (16.0f, juce::Font::bold));
+        g.drawText ("Save program", r.removeFromTop (24), juce::Justification::centredLeft);
+        r.removeFromTop (6);
+
+        auto line = [&] (const juce::String& label, const juce::String& text, juce::Colour c)
+        {
+            auto row = r.removeFromTop (20);
+            g.setFont (juce::FontOptions (12.5f));
+            g.setColour (Palette::silkscreen.withAlpha (0.6f));
+            g.drawText (label, row.removeFromLeft (70), juce::Justification::centredLeft);
+            g.setFont (juce::FontOptions (13.5f));
+            g.setColour (c);
+            g.drawFittedText (text, row, juce::Justification::centredLeft, 1, 0.85f);
+        };
+        line ("Saving", "\"" + owner.saveName + "\"" + (owner.saveFrom.isNotEmpty() ? ", from " + owner.saveFrom : juce::String()),
+              Palette::silkscreen);
+
+        const auto* target = owner.model.program (owner.saveTarget);
+        const bool chosen = owner.saveTarget.isValid();
+        const bool toSynth = chosen && owner.isHardwareBank (owner.saveTarget.bank);
+        const bool replacing = target != nullptr && ! target->isEmpty();
+        line ("Save to", ! chosen ? juce::String ("Click a slot in the library")
+                         : owner.locationOf (owner.saveTarget) + (replacing ? ", replacing \"" + target->name + "\"" : juce::String (" (empty)")),
+              chosen ? saveAmber : Palette::silkscreen.withAlpha (0.5f));
+        r.removeFromTop (8);
+
+        // What's in the edit buffer now.
+        auto box = r.removeFromTop (58);
+        g.setColour (juce::Colour (0xff1d1f23));
+        g.fillRoundedRectangle (box.toFloat(), 5.0f);
+        g.setColour (juce::Colour (0xff3a3d43));
+        g.drawRoundedRectangle (box.toFloat().reduced (0.5f), 5.0f, 1.0f);
+        box.reduce (10, 6);
+        {
+            // Speaker: a cone and two sound waves (24-unit icon drawn at 20 px).
+            const auto icon = box.removeFromLeft (28).toFloat().withSizeKeepingCentre (20.0f, 20.0f);
+            const auto t = juce::AffineTransform::scale (20.0f / 24.0f).translated (icon.getX(), icon.getY());
+            juce::Path cone, waves;
+            cone.startNewSubPath (4, 9); cone.lineTo (8, 9); cone.lineTo (13, 5); cone.lineTo (13, 19);
+            cone.lineTo (8, 15); cone.lineTo (4, 15); cone.closeSubPath();
+            waves.addCentredArc (12.0f, 12.0f, 5.0f, 5.0f, 0.0f, 0.785f, 2.356f, true);
+            waves.addCentredArc (12.0f, 12.0f, 8.5f, 8.5f, 0.0f, 0.785f, 2.356f, true);
+            g.setColour (replacing ? saveAmber : Palette::silkscreen.withAlpha (0.35f));
+            g.fillPath (cone, t);
+            g.strokePath (waves, juce::PathStrokeType (2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded), t);
+        }
+        g.setColour (Palette::silkscreen.withAlpha (0.85f));
+        g.setFont (juce::FontOptions (13.0f));
+        g.drawFittedText (replacing ? "Now in the TEO-5's edit buffer: \"" + target->name + "\". Play your MIDI controller or the "
+                                      "TEO-5's keys to hear the sound you'd replace."
+                          : chosen ? juce::String ("This slot is empty, so there's nothing to audition. Your edit is in the edit buffer.")
+                                   : juce::String ("Select a slot and its program goes into the TEO-5's edit buffer, so you can play it "
+                                                   "from your MIDI controller or the synth's keys before replacing it."),
+                          box, juce::Justification::centredLeft, 3, 1.0f);
+        r.removeFromTop (8);
+
+        if (chosen)
+        {
+            g.setFont (juce::FontOptions (12.5f));
+            g.setColour (toSynth ? juce::Colour (0xfff0c27a) : Palette::silkscreen.withAlpha (0.6f));
+            g.drawFittedText (toSynth ? juce::String::fromUTF8 ("\xe2\x9a\xa0 Confirm writes \"") + owner.saveName + "\" into the TEO-5's memory at "
+                                            + owner.locationOf (owner.saveTarget) + "."
+                                      : "Saved in the library only (" + owner.model.banks()[(size_t) owner.saveTarget.bank].name
+                                            + "). Nothing is written to the TEO-5.",
+                              r.removeFromTop (34), juce::Justification::topLeft, 2, 1.0f);
+        }
+    }
+
+    void resized() override
+    {
+        auto r = getLocalBounds().reduced (18, 14).removeFromBottom (30);
+        confirm.setBounds (r.removeFromRight (100));
+        r.removeFromRight (10);
+        cancel.setBounds (r.removeFromRight (100));
+    }
+
+private:
+    LibraryDrawer& owner;
+    juce::TextButton cancel { "Cancel" }, confirm { "Confirm" };
+};
+
 // ---- Drawer -------------------------------------------------------------------------------------
 
 LibraryDrawer::LibraryDrawer (LibraryModel& m, HardwareTransfer& t, MidiSync& s, ProgramState& ps)
@@ -460,7 +614,7 @@ LibraryDrawer::LibraryDrawer (LibraryModel& m, HardwareTransfer& t, MidiSync& s,
     title.setColour (juce::Label::textColourId, text);
     addAndMakeVisible (title);
 
-    for (auto* b : { &fetchButton, &importButton, &addButton, &newBankButton, &undoButton, &redoButton, &cancelButton })
+    for (auto* b : { &fetchButton, &importButton, &saveAllButton, &newBankButton, &undoButton, &redoButton, &cancelButton })
     {
         b->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff232427));
         b->setColour (juce::TextButton::textColourOffId, text);
@@ -468,13 +622,19 @@ LibraryDrawer::LibraryDrawer (LibraryModel& m, HardwareTransfer& t, MidiSync& s,
     }
     fetchButton.setTooltip ("Fetch programs from the TEO-5");
     importButton.setTooltip ("Import a .syx file (single programs or banks)");
-    addButton.setTooltip ("Save the current panel program into the selected bank");
+    saveAllButton.setTooltip ("Write every NOT SENT program in your TEO-5 User banks to the synth (shows what it overwrites first)");
+    newBankButton.setTooltip ("Make a new bank in MY BANKS");
+    helpButton.setTooltip ("How the library works");
+    helpButton.onClick = [this] { showHelp (! helpPanel.isVisible()); };
+    addAndMakeVisible (helpButton);
+    helpPanel.close.onClick = [this] { showHelp (false); };
+    addChildComponent (helpPanel);
     undoButton.setTooltip ("Undo (Cmd+Z)");
     redoButton.setTooltip ("Redo (Shift+Cmd+Z)");
 
     fetchButton.onClick = [this] { showFetchMenu(); };
     importButton.onClick = [this] { importSyx (currentBank()); };
-    addButton.onClick = [this] { addCurrentProgram(); };
+    saveAllButton.onClick = [this] { saveAllChanges(); };
     newBankButton.onClick = [this]
     {
         askText ("New bank", "Bank name:", "New Bank", [this] (const juce::String& n) { model.addBank (n); });
@@ -545,6 +705,7 @@ LibraryDrawer::LibraryDrawer (LibraryModel& m, HardwareTransfer& t, MidiSync& s,
         sendingBankUuids.clear();
     };
 
+    savePanel = std::make_unique<SavePanel> (*this);
     model.addChangeListener (this);
     transfer.detectNamesFromLibrary(); // names for banks fetched before the name field was known
     rebuildRows();
@@ -553,6 +714,8 @@ LibraryDrawer::LibraryDrawer (LibraryModel& m, HardwareTransfer& t, MidiSync& s,
 
 LibraryDrawer::~LibraryDrawer()
 {
+    if (saving)
+        sync.pauseFollowing = false;
     transfer.onFinished = nullptr;
     model.removeChangeListener (this);
 }
@@ -578,12 +741,18 @@ void LibraryDrawer::resized()
 {
     auto r = getLocalBounds().reduced (12, 8);
     r.removeFromRight (2);
-    title.setBounds (r.removeFromTop (24));
+    {
+        auto top = r.removeFromTop (24);
+        helpButton.setBounds (top.removeFromLeft (22).withSizeKeepingCentre (20, 20));
+        top.removeFromLeft (6);
+        title.setBounds (top);
+    }
     r.removeFromTop (8);
+    helpPanel.setBounds (getLocalBounds().reduced (24, 40).withTrimmedRight (2));
 
     auto buttons = r.removeFromTop (24);
     const int bw = (buttons.getWidth() - 5 * 4) / 6;
-    for (auto* b : { &fetchButton, &importButton, &addButton, &newBankButton, &undoButton, &redoButton })
+    for (auto* b : { &fetchButton, &importButton, &saveAllButton, &newBankButton, &undoButton, &redoButton })
     {
         b->setBounds (buttons.removeFromLeft (bw));
         buttons.removeFromLeft (4);
@@ -692,6 +861,8 @@ void LibraryDrawer::rebuildRows()
         auto& rowList = rowLists[(size_t) paneOf (bank)];
         rowList.push_back ({ true, b, -1 });
         rowList.insert (rowList.end(), programs.begin(), programs.end());
+        if (bank.kind == LibraryBank::Kind::Disk && ! filtering && ! isCollapsed (b))
+            rowList.push_back ({ false, b, (int) bank.programs.size(), true }); // always room for one more
     }
 
     undoButton.setEnabled (model.getUndoManager().canUndo());
@@ -741,7 +912,13 @@ void LibraryDrawer::rowClicked (int pane, int row, const juce::MouseEvent& e)
     }
     const auto& r = rowList[(size_t) row];
 
-    if (r.isBank)
+    if (saving)
+    {
+        if (! r.isBank)
+            setSaveTarget ({ r.bank, r.index });
+        return;
+    }
+    if (r.isBank || r.isNew)
     {
         selection.clear();
         anchorRow = row;
@@ -774,6 +951,8 @@ void LibraryDrawer::rowDoubleClicked (int pane, int row)
     if (! juce::isPositiveAndBelow (row, (int) rowList.size()))
         return;
     const auto& r = rowList[(size_t) row];
+    if (saving)
+        return;
     if (r.isBank)
         renameBank (r.bank);
     else
@@ -846,10 +1025,9 @@ void LibraryDrawer::rowIconClicked (int pane, int row, int icon)
         return;
     switch (icon)
     {
-        case 0: writeToLocation (ref); break;
-        case 1: exportPrograms ({ ref }); break;
-        case 2: if (! model.isFactoryBank (ref.bank)) renameProgram (ref); break;
-        case 3:
+        case 0: exportPrograms ({ ref }); break;
+        case 1: if (! model.isFactoryBank (ref.bank)) renameProgram (ref); break;
+        case 2:
             if (! model.isFactoryBank (ref.bank))
                 confirmDelete ({ ref });
             break;
@@ -887,7 +1065,7 @@ void LibraryDrawer::dropProgramsAt (int pane, int row, bool below)
 
     // One program dropped onto another slot of the same kind of bank: the two swap places. That's within the
     // TEO-5's User banks, or within one of your banks (between two of your banks it moves; see below).
-    if (refs.size() == 1 && ! r.isBank && ! copying && ! model.isFactoryBank (refs[0].bank) && ! model.isFactoryBank (bank)
+    if (refs.size() == 1 && ! r.isBank && ! r.isNew && ! copying && ! model.isFactoryBank (refs[0].bank) && ! model.isFactoryBank (bank)
         && ((isHardwareBank (bank) && isHardwareBank (refs[0].bank)) || (! isHardwareBank (bank) && refs[0].bank == bank)))
     {
         model.swapPrograms (refs[0], { r.bank, r.index });
@@ -940,7 +1118,7 @@ void LibraryDrawer::stepSelection (int delta)
     auto& viewport = viewports[(size_t) anchorPane];
     std::vector<int> programRows;
     for (int i = 0; i < (int) rowList.size(); ++i)
-        if (! rowList[(size_t) i].isBank)
+        if (! rowList[(size_t) i].isBank && ! rowList[(size_t) i].isNew)
             programRows.push_back (i);
     if (programRows.empty())
         return;
@@ -1013,6 +1191,19 @@ void LibraryDrawer::setStatus (const juce::String& s)
 bool LibraryDrawer::keyPressed (const juce::KeyPress& k)
 {
     const auto mods = k.getModifiers();
+    if (saving)
+    {
+        if (k == juce::KeyPress::escapeKey)
+            cancelSave();
+        else if (k == juce::KeyPress::returnKey && saveTarget.isValid())
+            confirmSave();
+        return true; // nothing else while choosing where to save
+    }
+    if (helpPanel.isVisible() && k == juce::KeyPress::escapeKey)
+    {
+        showHelp (false);
+        return true;
+    }
     if (k == juce::KeyPress ('z', juce::ModifierKeys::commandModifier, 0)) { undoOrRedo (true); return true; }
     if (k == juce::KeyPress ('z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier, 0)
         || k == juce::KeyPress ('y', juce::ModifierKeys::commandModifier, 0)) { undoOrRedo (false); return true; }
@@ -1026,7 +1217,7 @@ bool LibraryDrawer::keyPressed (const juce::KeyPress& k)
     if (k == juce::KeyPress ('a', juce::ModifierKeys::commandModifier, 0))
     {
         for (auto& r : rowLists[(size_t) anchorPane])
-            if (! r.isBank)
+            if (! r.isBank && ! r.isNew)
                 selection.insert ({ r.bank, r.index });
         repaintLists();
         return true;
@@ -1099,13 +1290,15 @@ void LibraryDrawer::rowMenu (int pane, int row)
         const bool single = refs.size() <= 1;
         const auto* p = model.program (ref);
         const bool factoryBank = model.isFactoryBank (ref.bank);
-        if (p != nullptr && p->isEmpty())
+        if (r.isNew || (p != nullptr && p->isEmpty()))
         {
             m.addItem ("Paste here", model.hasClipboard() && ! factoryBank, false, [this, ref] { model.pastePrograms (ref.bank, ref.index); });
             m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (lists[(size_t) pane].get())
                                  .withTargetScreenArea ({ juce::Desktop::getMousePosition(), juce::Desktop::getMousePosition() }));
             return;
         }
+        if (p == nullptr)
+            return;
         m.addItem ("Load into edit buffer", [this, ref] { loadToEditBuffer (ref); });
         m.addItem ("Write to TEO-5 memory...", single, false, [this, ref] { writeToLocation (ref); });
         m.addSeparator();
@@ -1190,25 +1383,6 @@ void LibraryDrawer::loadToEditBuffer (ProgramRef ref)
     }
 }
 
-void LibraryDrawer::addCurrentProgram()
-{
-    auto raw = sync.captureCurrent();
-    if (raw.isEmpty())
-    {
-        sync.requestEditBuffer();
-        setStatus ("Reading the current program from the TEO-5. Click + Current again in a moment");
-        return;
-    }
-    int bank = currentBank();
-    if (bank < 0)
-        bank = model.addBank ("My Programs");
-    auto p = primarySelection();
-    auto ref = model.insertProgram (bank, p.isValid() && p.bank == bank ? p.index + 1 : -1,
-                                    LibraryModel::makeProgram (raw, programState.name, "Panel"));
-    selection = { { ref.bank, ref.index } };
-    setStatus ("Saved \"" + programState.name + "\" to the library");
-}
-
 void LibraryDrawer::writeToLocation (ProgramRef ref)
 {
     auto* p = model.program (ref);
@@ -1222,6 +1396,7 @@ void LibraryDrawer::writeToLocation (ProgramRef ref)
                          [this, raw, name] (int bank, int prog)
                          {
                              sync.writeProgram (bank, prog, false, *raw);
+                             model.noteWrittenToSynth (bank, prog - 1, *raw, name); // that slot's NOT SENT mark follows
                              setStatus ("Wrote \"" + name + "\" to " + HardwareTransfer::locationName ({ bank, false }, prog));
                          });
 }
@@ -1579,6 +1754,338 @@ void LibraryDrawer::confirm (const juce::String& titleText, const juce::String& 
 {
     juce::AlertWindow::showOkCancelBox (juce::MessageBoxIconType::WarningIcon, titleText, message, okText, "Cancel", this,
                                         juce::ModalCallbackFunction::create ([onOk] (int r) { if (r == 1) onOk(); }));
+}
+
+// ---- Saving (WRITE) ------------------------------------------------------------------------------
+
+juce::Component& LibraryDrawer::getSavePanel() { return *savePanel; }
+
+juce::String LibraryDrawer::locationOf (ProgramRef ref) const
+{
+    if (! juce::isPositiveAndBelow (ref.bank, (int) model.banks().size()))
+        return {};
+    const auto& b = model.banks()[(size_t) ref.bank];
+    if (b.kind == LibraryBank::Kind::Hardware)
+        return HardwareTransfer::locationName ({ b.hardwareBank, b.factory }, ref.index + 1);
+    return b.name + " " + juce::String (ref.index + 1).paddedLeft ('0', 2);
+}
+
+bool LibraryDrawer::isSaveTarget (const Row& r) const
+{
+    return saving && ! r.isBank && r.bank == saveTarget.bank && r.index == saveTarget.index;
+}
+
+void LibraryDrawer::beginSave (const juce::MemoryBlock& raw, const juce::String& name, const juce::String& from, ProgramRef current)
+{
+    showHelp (false);
+    saving = true;
+    auditioned = false;
+    saveRaw = raw;
+    saveName = name;
+    saveFrom = from;
+    saveTarget = {};
+    sync.pauseFollowing = true; // the edit buffer is about to hold other programs on purpose
+    selection.clear();
+
+    // The panel's program is selected; if it isn't in a User bank or one of your banks, start at User 1, slot 01.
+    ProgramRef show;
+    if (model.program (current) != nullptr && ! model.isFactoryBank (current.bank))
+    {
+        selection = { { current.bank, current.index } };
+        show = current;
+    }
+    else
+        for (int b = 0; b < (int) model.banks().size(); ++b)
+            if (const auto& bank = model.banks()[(size_t) b]; bank.kind == LibraryBank::Kind::Hardware && ! bank.factory && bank.hardwareBank == 1)
+                show = { b, 0 };
+    if (show.isValid())
+        expanded.insert (model.banks()[(size_t) show.bank].uuid);
+    rebuildRows();
+    if (show.isValid() && selection.empty())
+        setSaveTarget (show);
+
+    // Scroll the row into view.
+    for (int pane = 0; pane < numPanes && show.isValid(); ++pane)
+        for (int i = 0; i < (int) rowLists[(size_t) pane].size(); ++i)
+            if (const auto& r = rowLists[(size_t) pane][(size_t) i]; ! r.isBank && r.bank == show.bank && r.index == show.index)
+                viewports[(size_t) pane].setViewPosition (0, juce::jmax (0, i * rowHeight - viewports[(size_t) pane].getHeight() / 3));
+
+    savePanel->update();
+    savePanel->setVisible (true);
+    savePanel->toFront (false);
+    setStatus (show.isValid() || ! model.banks().empty() ? "Choose where to save: click a slot in a TEO-5 User bank or in MY BANKS"
+                                                         : "Fetch your TEO-5 User banks, or make a bank in MY BANKS, to save into");
+    repaintLists();
+}
+
+void LibraryDrawer::setSaveTarget (ProgramRef ref)
+{
+    if (! saving || ! juce::isPositiveAndBelow (ref.bank, (int) model.banks().size()))
+        return;
+    if (model.isFactoryBank (ref.bank))
+    {
+        setStatus ("Factory programs can't be changed: pick a slot in a User bank or in MY BANKS");
+        return;
+    }
+    if (isHardwareBank (ref.bank) && ref.index >= LibraryModel::slotsPerBank)
+        return;
+    saveTarget = ref;
+    // Audition: the program stored there goes into the edit buffer (the panel doesn't change).
+    if (auto* p = model.program (ref); p != nullptr && p->raw != nullptr)
+    {
+        sync.sendToEditBuffer (*p->raw);
+        auditioned = true;
+    }
+    else if (std::exchange (auditioned, false))
+        sync.restoreEditBuffer();
+    setStatus ({});
+    savePanel->update();
+    repaintLists();
+}
+
+void LibraryDrawer::confirmSave()
+{
+    if (! saving || ! saveTarget.isValid())
+        return;
+    const auto& bank = model.banks()[(size_t) saveTarget.bank];
+    const bool toSynth = bank.kind == LibraryBank::Kind::Hardware;
+    std::optional<HardwareTransfer::BankAddress> written;
+    const int program = saveTarget.index + 1;
+    if (toSynth)
+    {
+        written = HardwareTransfer::BankAddress { bank.hardwareBank, false };
+        sync.writeProgram (bank.hardwareBank, program, false, saveRaw);
+    }
+    const auto where = locationOf (saveTarget), bankName = bank.name;
+    const auto ref = model.saveProgram (saveTarget, saveRaw, saveName, toSynth);
+    sync.loadProgram (saveRaw); // the saved program is in the edit buffer, as stored from now on
+    programState.name = saveName;
+    loaded = ref;
+    saving = auditioned = false;
+    sync.pauseFollowing = false;
+    saveTarget = {};
+    savePanel->setVisible (false);
+    selection.clear();
+    if (ref.isValid())
+        selection.insert ({ ref.bank, ref.index });
+    setStatus (toSynth ? "Wrote \"" + saveName + "\" to " + where : "Saved \"" + saveName + "\" in " + bankName);
+    repaintLists();
+    if (onSaveFinished)
+        onSaveFinished (true, written, program);
+}
+
+void LibraryDrawer::cancelSave()
+{
+    if (! saving)
+        return;
+    if (std::exchange (auditioned, false))
+        sync.restoreEditBuffer(); // your edit goes back
+    saving = false;
+    sync.pauseFollowing = false;
+    saveTarget = {};
+    savePanel->setVisible (false);
+    selection.clear();
+    setStatus ("Not saved");
+    repaintLists();
+    if (onSaveFinished)
+        onSaveFinished (false, std::nullopt, 0);
+}
+
+// ---- Sending changes ------------------------------------------------------------------------------
+
+int LibraryDrawer::unsentCount() const
+{
+    int n = 0;
+    for (auto& b : model.banks())
+        if (b.kind == LibraryBank::Kind::Hardware && ! b.factory)
+            for (int i = 0; i < (int) b.programs.size() && i < HardwareTransfer::programsPerBank; ++i)
+                n += b.programs[(size_t) i].unsent ? 1 : 0;
+    return n;
+}
+
+// Every NOT SENT slot in the TEO-5 User banks, with a line each saying what it overwrites on the synth.
+std::vector<HardwareTransfer::Write> LibraryDrawer::unsentWrites (juce::StringArray& bankUuids, juce::StringArray& lines) const
+{
+    std::vector<HardwareTransfer::Write> writes;
+    const auto basic = MidiSync::basicProgram();
+    for (auto& b : model.banks())
+    {
+        if (b.kind != LibraryBank::Kind::Hardware || b.factory)
+            continue;
+        bool any = false;
+        for (int i = 0; i < (int) b.programs.size() && i < HardwareTransfer::programsPerBank; ++i)
+        {
+            const auto& p = b.programs[(size_t) i];
+            if (! p.unsent || (p.raw == nullptr && basic.isEmpty()))
+                continue;
+            writes.push_back ({ { b.hardwareBank, false }, i + 1, p.raw != nullptr ? *p.raw : basic }); // deleted: initialize it
+            any = true;
+            const auto onSynth = model.synthSlot (b.hardwareBank, i).name;
+            const auto now = onSynth.isNotEmpty() ? "\"" + onSynth + "\"" : juce::String ("What's stored there");
+            const auto by = p.raw == nullptr ? juce::String ("the Basic Program (slot deleted)")
+                          : onSynth == p.name ? "your changed \"" + p.name + "\"" : "\"" + p.name + "\"";
+            lines.add (HardwareTransfer::locationName ({ b.hardwareBank, false }, i + 1) + ": " + now + " is overwritten by " + by);
+        }
+        if (any)
+            bankUuids.add (b.uuid);
+    }
+    return writes;
+}
+
+namespace
+{
+    juce::String listOf (const juce::StringArray& lines)
+    {
+        juce::StringArray shown;
+        for (int i = 0; i < lines.size() && i < 12; ++i)
+            shown.add (juce::String::fromUTF8 ("\xe2\x80\xa2 ") + lines[i]);
+        if (lines.size() > 12)
+            shown.add ("and " + juce::String (lines.size() - 12) + " more");
+        return shown.joinIntoString ("\n");
+    }
+}
+
+void LibraryDrawer::saveAllChanges()
+{
+    juce::StringArray uuids, lines;
+    auto writes = unsentWrites (uuids, lines);
+    if (writes.empty())
+    {
+        setStatus ("Nothing to send: every program in your TEO-5 User banks is on the synth");
+        return;
+    }
+    const int n = (int) writes.size();
+    auto* w = new juce::AlertWindow ("Save " + juce::String (n) + " change" + (n == 1 ? "" : "s") + " to the TEO-5?",
+                                     "These programs on the TEO-5 will be overwritten. This writes to the synth's memory and "
+                                     "can't be undone from the editor.\n\n" + listOf (lines) + "\n\nThe NOT SENT marks are cleared afterwards.",
+                                     juce::MessageBoxIconType::WarningIcon, this);
+    w->addButton ("Confirm", 1, juce::KeyPress (juce::KeyPress::returnKey));
+    w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+    w->enterModalState (true, juce::ModalCallbackFunction::create ([this, writes = std::move (writes), uuids] (int r) mutable
+    {
+        if (r == 1)
+            startWrites (std::move (writes), uuids);
+    }), true);
+}
+
+void LibraryDrawer::closeWithUnsentCheck (std::function<void()> close)
+{
+    if (saving)
+    {
+        cancelSave(); // the editor closes the drawer
+        return;
+    }
+    juce::StringArray uuids, lines;
+    auto writes = unsentWrites (uuids, lines);
+    if (writes.empty() || transfer.isBusy())
+    {
+        close();
+        return;
+    }
+    const int n = (int) writes.size();
+    auto* w = new juce::AlertWindow ("Send unsent changes to the TEO-5?",
+                                     juce::String (n) + " change" + (n == 1 ? "" : "s") + " in your TEO-5 User banks "
+                                         + (n == 1 ? "hasn't" : "haven't") + " been sent to the synth:\n\n" + listOf (lines)
+                                         + "\n\nSending writes the patches to the TEO-5's memory, overwriting what's stored in those slots on the synth.",
+                                     juce::MessageBoxIconType::WarningIcon, this);
+    w->addButton ("Send and close", 1, juce::KeyPress (juce::KeyPress::returnKey));
+    w->addButton ("Close without sending", 2);
+    w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+    w->enterModalState (true, juce::ModalCallbackFunction::create ([this, writes = std::move (writes), uuids, close, n] (int r) mutable
+    {
+        if (r == 1)
+        {
+            startWrites (std::move (writes), uuids);
+            if (onShowMessage)
+                onShowMessage ("Sending " + juce::String (n) + " program" + (n == 1 ? "" : "s") + " to the TEO-5");
+        }
+        if (r != 0)
+            close();
+    }), true);
+}
+
+// ---- Guide ------------------------------------------------------------------------------------------
+
+namespace
+{
+const char* const libraryGuide = R"(THE LIBRARY
+Your programs, kept on this computer. The left column is the TEO-5's own banks as last fetched; the right column, MY BANKS, holds your own banks and imported .syx files.
+
+THE TWO COLUMNS
+- TEO-5: User banks 1-16 (16 slots each) and Factory banks, fetched from the synth. Factory banks are read-only.
+- MY BANKS: your banks, any number of programs each. Every bank ends with an Empty slot to save into.
+- A bank's header shows how many programs it holds, or how many changes are NOT SENT. Click the triangle to open or close a bank; double-click the name to rename it.
+
+LOADING AND ORGANISING
+- Click a program to load it into the TEO-5's edit buffer (nothing is written to memory). Shift-click and Cmd-click select several.
+- Icons on each row: star (favourite), export as .syx, rename, delete. Right-click for more (tags, copy, paste, duplicate, write to TEO-5 memory).
+- Drag programs between banks: within the TEO-5 User banks or one of your banks a drop on another program swaps the two; Option-drag copies. Drag a bank's header to reorder banks.
+- Search finds names, sources and tags (type tag:pad for tags only). Favourites shows starred programs only.
+- Undo and Redo cover every change in the library.
+
+SAVING YOUR EDIT (WRITE)
+- Press WRITE on the front panel. The library opens with the panel's program selected, and the Save pop-up appears over the panel.
+- Click a slot in a TEO-5 User bank or in MY BANKS. The program stored there goes into the TEO-5's edit buffer, so you can play it from your MIDI controller or the synth's keys to hear what you would replace. If the panel's program isn't in a User bank or one of your banks, User 1 slot 01 is chosen to start with.
+- Confirm saves: into a TEO-5 User slot it's written to the synth's memory (and the library); into MY BANKS it's kept in the library only. The drawer closes and the panel shows the saved program.
+- Cancel (or LIBRARY, or Esc) puts your edit back in the edit buffer and closes the drawer.
+
+SENDING CHANGES TO THE TEO-5
+- A slot in a TEO-5 User bank whose program differs from what the synth holds there is marked NOT SENT. Putting programs back where they were, or Undo, clears the mark again.
+- Save all changes writes every NOT SENT slot to the TEO-5's memory. It lists what will be overwritten on the synth and asks you to Confirm first; the NOT SENT marks go once the programs are sent.
+- Closing the library with the LIBRARY button while changes aren't sent asks whether to send them.
+- TEO-5 -> Library re-reads all 16 User banks from the synth. Library -> TEO-5 writes the User banks back (changes only, or everything). Fetch reads one bank, the factory banks or the edit buffer.
+
+FILES
+- Import reads .syx files (single programs or whole banks) into MY BANKS; you can also drop .syx files on the library.
+- Export saves a program, several programs or a whole bank as .syx.)";
+}
+
+LibraryDrawer::HelpPanel::HelpPanel()
+{
+    text.setMultiLine (true);
+    text.setReadOnly (true);
+    text.setScrollbarsShown (true);
+    text.setCaretVisible (false);
+    text.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0xff141517));
+    text.setColour (juce::TextEditor::outlineColourId, Palette::pinstripe.withAlpha (0.5f));
+    // Section headings (lines in capitals) in the panel's lettering, the rest as plain text, as in the sequencer's guide.
+    for (auto& line : juce::StringArray::fromLines (libraryGuide))
+    {
+        const bool heading = line.length() < 60 && ! line.startsWith ("-") && line == line.toUpperCase()
+                             && line.containsAnyOf ("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        text.setFont (heading ? TEO5LookAndFeel::panelFont (13.0f) : juce::Font (juce::FontOptions (14.0f)));
+        text.setColour (juce::TextEditor::textColourId, heading ? Palette::pinstripe.brighter (0.4f) : Palette::silkscreen);
+        text.insertTextAtCaret (line + "\n");
+    }
+    addAndMakeVisible (text);
+    addAndMakeVisible (close);
+}
+
+void LibraryDrawer::HelpPanel::paint (juce::Graphics& g)
+{
+    g.setColour (juce::Colour (0xff181a1c));
+    g.fillRoundedRectangle (getLocalBounds().toFloat(), 4.0f);
+    g.setColour (Palette::pinstripe);
+    g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 4.0f, 1.0f);
+}
+
+void LibraryDrawer::HelpPanel::resized()
+{
+    auto r = getLocalBounds().reduced (10);
+    close.setBounds (r.removeFromBottom (26).removeFromRight (90));
+    r.removeFromBottom (6);
+    text.setBounds (r);
+}
+
+void LibraryDrawer::showHelp (bool show)
+{
+    helpPanel.setVisible (show);
+    if (show)
+    {
+        helpPanel.toFront (false);
+        helpPanel.text.moveCaretToTop (false);
+    }
+    helpButton.setToggleState (show, juce::dontSendNotification);
 }
 
 } // namespace teo5

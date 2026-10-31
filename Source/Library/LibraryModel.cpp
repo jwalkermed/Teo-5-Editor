@@ -134,6 +134,7 @@ void LibraryModel::commit (State newState, const juce::String& actionName)
 void LibraryModel::restore (const State& s)
 {
     state = s;
+    updateUnsent (state);
     startTimer (800); // debounced save
     sendChangeMessage();
 }
@@ -214,6 +215,9 @@ int LibraryModel::upsertHardwareBank (const juce::String& name, int panelBank, b
     }
     s[(size_t) index].name = name;
     s[(size_t) index].programs = std::move (programs);
+    if (! factory)
+        for (int i = 0; i < (int) s[(size_t) index].programs.size(); ++i)
+            recordSynthSlot (panelBank, i, s[(size_t) index].programs[(size_t) i]); // fetched: this is what the synth has
     commit (std::move (s), "Fetched " + name);
     return index;
 }
@@ -480,14 +484,88 @@ int LibraryModel::overwritePrograms (juce::Array<ProgramRef> refs, int toBank, i
 
 void LibraryModel::clearUnsent (int bank)
 {
-    if (! juce::isPositiveAndBelow (bank, (int) state.size()))
+    if (! juce::isPositiveAndBelow (bank, (int) state.size()) || state[(size_t) bank].kind != LibraryBank::Kind::Hardware
+        || state[(size_t) bank].factory)
         return;
+    const auto& b = state[(size_t) bank];
+    for (int i = 0; i < (int) b.programs.size(); ++i)
+        if (b.programs[(size_t) i].unsent)
+            recordSynthSlot (b.hardwareBank, i, b.programs[(size_t) i]); // sent: the synth now has it
+    restore (state); // marks follow the record; not an undo step (undo doesn't change the synth)
+}
+
+LibraryModel::SynthSlot LibraryModel::synthSlot (int panelBank, int index) const
+{
+    if (auto it = synthRecord.find (panelBank); it != synthRecord.end() && juce::isPositiveAndBelow (index, 16))
+        return it->second[(size_t) index];
+    return {};
+}
+
+juce::String LibraryModel::fingerprint (const LibraryProgram& p)
+{
+    if (p.raw == nullptr)
+        return "-";
+    juce::uint64 h = 14695981039346656037ull; // FNV-1a over the program data
+    auto* d = static_cast<const juce::uint8*> (p.raw->getData());
+    for (size_t i = 0; i < p.raw->getSize(); ++i)
+        h = (h ^ d[i]) * 1099511628211ull;
+    return juce::String::toHexString ((juce::int64) h);
+}
+
+void LibraryModel::recordSynthSlot (int panelBank, int index, const LibraryProgram& p)
+{
+    if (juce::isPositiveAndBelow (index, 16))
+        synthRecord[panelBank][(size_t) index] = { p.isEmpty() ? juce::String ("Basic Program") : p.name, fingerprint (p) };
+}
+
+void LibraryModel::noteWrittenToSynth (int panelBank, int index, const juce::MemoryBlock& raw, const juce::String& name)
+{
+    recordSynthSlot (panelBank, index, makeProgram (raw, name, {}));
+    restore (state);
+}
+
+void LibraryModel::updateUnsent (State& s) const
+{
+    for (auto& b : s)
+    {
+        if (b.kind != LibraryBank::Kind::Hardware || b.factory)
+            continue;
+        for (int i = 0; i < (int) b.programs.size() && i < 16; ++i)
+            if (const auto onSynth = synthSlot (b.hardwareBank, i); onSynth.fingerprint.isNotEmpty())
+                b.programs[(size_t) i].unsent = fingerprint (b.programs[(size_t) i]) != onSynth.fingerprint;
+    }
+}
+
+ProgramRef LibraryModel::saveProgram (ProgramRef target, const juce::MemoryBlock& raw, const juce::String& name, bool writtenToSynth)
+{
+    if (! juce::isPositiveAndBelow (target.bank, (int) state.size()) || isFactoryBank (target.bank) || target.index < 0)
+        return {};
     auto s = state;
-    bool any = false;
-    for (auto& p : s[(size_t) bank].programs)
-        any = std::exchange (p.unsent, false) || any;
-    if (any)
-        commit (std::move (s), "Bank sent");
+    auto& b = s[(size_t) target.bank];
+    const bool hardware = b.kind == LibraryBank::Kind::Hardware;
+    if (hardware && target.index >= slotsPerBank)
+        return {};
+    auto p = makeProgram (raw, name, "Saved from the panel");
+    const auto what = "Save \"" + name + "\" to " + where (b, target.index);
+    if (! hardware && target.index >= (int) b.programs.size())
+    {
+        b.programs.push_back (std::move (p));
+        target.index = (int) b.programs.size() - 1;
+    }
+    else
+    {
+        while ((int) b.programs.size() <= target.index)
+            b.programs.push_back (LibraryProgram::empty());
+        if (hardware)
+        {
+            p.unsent = ! writtenToSynth;
+            if (writtenToSynth)
+                recordSynthSlot (b.hardwareBank, target.index, p);
+        }
+        b.programs[(size_t) target.index] = std::move (p);
+    }
+    commit (std::move (s), what);
+    return target;
 }
 
 bool LibraryModel::isPlaceholderName (const juce::String& n)
@@ -596,6 +674,7 @@ bool LibraryModel::save()
         bj->setProperty ("kind", b.kind == LibraryBank::Kind::Hardware ? "hardware" : "disk");
         bj->setProperty ("factory", b.factory);
         bj->setProperty ("hardwareBank", b.hardwareBank);
+
         juce::Array<juce::var> progs;
         for (auto& p : b.programs)
         {
@@ -639,6 +718,22 @@ bool LibraryModel::save()
     auto* root = new juce::DynamicObject();
     root->setProperty ("version", 1);
     root->setProperty ("banks", banksJson);
+    juce::Array<juce::var> synthJson; // what's on the TEO-5, per User bank
+    for (auto& [bank, slots] : synthRecord)
+    {
+        auto* sj = new juce::DynamicObject();
+        sj->setProperty ("bank", bank);
+        juce::Array<juce::var> names, prints;
+        for (auto& slot : slots)
+        {
+            names.add (slot.name);
+            prints.add (slot.fingerprint);
+        }
+        sj->setProperty ("names", names);
+        sj->setProperty ("fingerprints", prints);
+        synthJson.add (juce::var (sj));
+    }
+    root->setProperty ("synth", synthJson);
 
     // Unreferenced program files are kept (undo may bring them back) and pruned on the next load.
     return folder.getChildFile ("library.json").replaceWithText (juce::JSON::toString (juce::var (root)));
@@ -688,6 +783,29 @@ bool LibraryModel::load()
             state.push_back (std::move (b));
         }
     }
+
+    // What's on the TEO-5. Libraries saved before 1.0.11 don't have it: a slot not marked NOT SENT holds what the
+    // synth has; a NOT SENT slot stays unknown (keeps its mark) until it's sent or fetched.
+    synthRecord.clear();
+    if (auto* synth = json.getProperty ("synth", {}).getArray())
+    {
+        for (auto& sv : *synth)
+        {
+            auto& slots = synthRecord[(int) sv.getProperty ("bank", 0)];
+            auto* names = sv.getProperty ("names", {}).getArray();
+            auto* prints = sv.getProperty ("fingerprints", {}).getArray();
+            for (int i = 0; i < 16; ++i)
+                slots[(size_t) i] = { names != nullptr && i < names->size() ? (*names)[i].toString() : juce::String(),
+                                      prints != nullptr && i < prints->size() ? (*prints)[i].toString() : juce::String() };
+        }
+    }
+    else
+        for (auto& b : state)
+            if (b.kind == LibraryBank::Kind::Hardware && ! b.factory)
+                for (int i = 0; i < (int) b.programs.size() && i < 16; ++i)
+                    if (! b.programs[(size_t) i].unsent)
+                        recordSynthSlot (b.hardwareBank, i, b.programs[(size_t) i]);
+    updateUnsent (state);
 
     // Remove program files no bank references any more.
     std::set<juce::String> live;

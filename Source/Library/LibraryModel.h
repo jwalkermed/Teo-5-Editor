@@ -6,6 +6,8 @@
 #include <juce_events/juce_events.h>
 #include <memory>
 #include <vector>
+#include <map>
+#include <array>
 
 namespace teo5
 {
@@ -17,7 +19,7 @@ struct LibraryProgram
     std::shared_ptr<const juce::MemoryBlock> raw; // unpacked 4096-byte program; shared between undo snapshots
     juce::StringArray tags;
     bool favorite = false;
-    bool unsent = false;   // hardware banks: changed in the library but not yet sent to the TEO-5
+    bool unsent = false;   // TEO-5 User banks: differs from what the synth has in this slot (worked out, see synthSlot)
     juce::String source;   // e.g. "TEO-5 User 3-07" or "Pads.syx"
     juce::Time modified;
 
@@ -93,7 +95,10 @@ public:
     int moveIntoSlots (juce::Array<ProgramRef>, int toBank, int firstIndex);
     // Exchanges two programs (or a program and an empty slot); in TEO-5 banks both become NOT SENT.
     void swapPrograms (ProgramRef, ProgramRef);
-    void clearUnsent (int bank);
+    void clearUnsent (int bank); // after a send: the synth now has the library's programs in this bank's NOT SENT slots
+    // Saves a program into a slot (WRITE): replaces the program there, or appends when the index is one of your banks'
+    // size. In a TEO-5 bank, writtenToSynth = it was written to the synth too (not NOT SENT). Returns where it went.
+    ProgramRef saveProgram (ProgramRef target, const juce::MemoryBlock& raw, const juce::String& name, bool writtenToSynth);
     // Renames programs that still carry a placeholder location name (e.g. "U1-01") using their data.
     // Returns how many were renamed (one undo step).
     int applyNames (std::function<juce::String (const juce::MemoryBlock&)> nameOf,
@@ -102,6 +107,17 @@ public:
     // General form: newName returns the new name, or an empty string to leave the program alone. One undo step.
     int renamePrograms (std::function<juce::String (const LibraryBank&, int index, const LibraryProgram&)> newName,
                         const juce::String& actionName);
+
+    // ---- What's on the TEO-5 ----
+    // For each User slot, what the synth itself holds, as last fetched, sent or written: the program's name and a
+    // fingerprint of its data. A User-bank slot is NOT SENT exactly when its program's fingerprint differs, so swapping
+    // programs back, Undo and Redo clear the mark as they should. Not part of the undo history (undo doesn't change the
+    // synth). An unknown slot (empty fingerprint) keeps whatever mark it had.
+    struct SynthSlot { juce::String name, fingerprint; };
+    SynthSlot synthSlot (int panelBank, int index) const;
+    // A program was written to a User slot on the synth outside a bank send (e.g. "Write to TEO-5 memory").
+    void noteWrittenToSynth (int panelBank, int index, const juce::MemoryBlock& raw, const juce::String& name);
+    static juce::String fingerprint (const LibraryProgram&); // "-" for an empty slot (sent as the Basic Program)
 
     // ---- Clipboard ----
     void copyPrograms (const juce::Array<ProgramRef>&);
@@ -125,6 +141,9 @@ private:
 
     void commit (State newState, const juce::String& actionName);
     void restore (const State&);
+    void updateUnsent (State&) const; // NOT SENT marks from synthRecord
+    void recordSynthSlot (int panelBank, int index, const LibraryProgram&);
+    std::map<int, std::array<SynthSlot, 16>> synthRecord; // panel bank 1-16
     void timerCallback() override;
 
     juce::File folder;

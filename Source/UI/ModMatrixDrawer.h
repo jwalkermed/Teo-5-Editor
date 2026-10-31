@@ -58,6 +58,8 @@ private:
     void touchedSlot (int slot);                        // a click on a slot: another slot's outline goes
     void clearFocus();
     void undoRedo (bool undo);
+    void clearAll();  // every slot: source Off, amount none, No Dest (one undo step)
+    void revertAll(); // every slot as stored in the program (one undo step)
     void updateHint();
     std::vector<Step> undoStack, redoStack;
     State stable {};
@@ -65,7 +67,7 @@ private:
     juce::uint32 lastEditAt = 0, historyUntil = 0;
     int seenProgramVersion = -1;
     bool comboOpen = false; // a slot's drop-down is open: its change is about to arrive (see SlotRow)
-    juce::TextButton undoButton { "Undo" }, redoButton { "Redo" };
+    juce::TextButton undoButton { "Undo" }, redoButton { "Redo" }, clearAllButton { "Clear all" }, revertButton { "Revert" };
 
     juce::AudioProcessorValueTreeState& apvts;
     juce::Label title { {}, "MOD MATRIX" };

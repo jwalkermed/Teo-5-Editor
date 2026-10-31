@@ -499,6 +499,43 @@ void partB()
             check (fake.memory.size() == stored, "REVERT writes nothing to memory");
         }
 
+        // EDITED (the OLED) and following the synth: while the editor is open, the edit buffer is re-read, so a sound
+        // the TEO-5 loads without telling (its Basic Program) reaches the panel; the editor's own edits are kept.
+        {
+            check (waitFor ([&] { return ! sync.isEdited(); }, 3000), "a program as loaded isn't EDITED");
+            proc.setNative ("vintage", proc.getNative ("vintage") == 30 ? 40 : 30);
+            const int edited = proc.getNative ("vintage");
+            check (sync.isEdited(), "an edit shows EDITED");
+            sync.followSynth = true;
+            pump (5000);
+            check (proc.getNative ("vintage") == edited && sync.isEdited(), "following the synth keeps the editor's edit");
+            const auto other = MidiSync::addressFor (2, 7, false);
+            juce::MemoryBlock replaced;
+            int followed = 0;
+            sync.onSynthProgramReplaced = [&followed] { ++followed; };
+            {
+                const juce::ScopedLock sl (fake.lock);
+                replaced = fake.stored (other.dumpBank, other.dumpProgram);
+                // A stored value outside the parameter's range, as real programs have (reverb size 255): the panel
+                // can't hold it, which must not make the editor load the sound again and again.
+                if (auto* f = sync.getLayout().field ("revSize"))
+                    sync.getLayout().write (replaced, *f, 255);
+                fake.program = replaced; // the synth changes its sound and sends nothing
+            }
+            check (waitFor ([&] { return proc.getProgramState().name == sync.nameOf (replaced); }, 10000),
+                   "a sound the synth loads by itself reaches the panel");
+            check (! sync.isEdited(), "and it's the stored version (not EDITED)");
+            // Each re-read compares the synth's sound with the panel's; they must now count as the same, or the
+            // editor would load it again every few seconds (the OLED flickered between its pages in 1.0.10).
+            check (sync.sameSound (replaced, sync.captureCurrent()), "the panel now counts as the synth's sound, out-of-range value included");
+            pump (5000);
+            check (followed == 1, "it's loaded once (" + juce::String (followed) + " loads)");
+            sync.onSynthProgramReplaced = nullptr;
+            sync.followSynth = false;
+            sync.loadProgram (*p->raw);
+            pump (300);
+        }
+
         // PLAY: a program load keeps the sequence playing; a program change (which stops the synth's sequencer)
         // turns PLAY off.
         proc.setNative ("seqPlay", 1);

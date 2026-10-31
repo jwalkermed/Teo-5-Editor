@@ -324,10 +324,18 @@ void OledDisplay::paint (juce::Graphics& g)
     g.setFont (FontOptions (h * 0.17f));
     g.drawText (String::fromUTF8 (fav == 1 ? "\xe2\x98\x85" : "\xe2\x98\x86"), starArea, Justification::centredLeft);
 
+    auto nameArea = screen.withTrimmedLeft (starArea.getWidth()).withTrimmedRight (starArea.getWidth() * 0.5f);
+    if (home.edited)
+    {
+        // EDITED in red under the name; the name moves up to make room.
+        auto line = nameArea.removeFromBottom (nameArea.getHeight() * 0.34f);
+        g.setColour (Colour (0xffff3b2f));
+        g.setFont (TEO5LookAndFeel::oledFont (h * 0.095f, true).withExtraKerningFactor (0.12f));
+        g.drawText ("EDITED", line.translated (0.0f, -h * 0.02f), Justification::centred, false);
+    }
     g.setColour (white);
     g.setFont (TEO5LookAndFeel::oledFont (h * 0.17f, true));
-    g.drawFittedText (home.name, screen.withTrimmedLeft (starArea.getWidth()).withTrimmedRight (starArea.getWidth() * 0.5f).toNearestInt(),
-                      Justification::centred, 1, 0.8f);
+    g.drawFittedText (home.name, nameArea.toNearestInt(), Justification::centred, 1, 0.8f);
 
     auto bt = bottom.removeFromTop (bottom.getHeight() * 0.52f);
     g.setFont (mid);

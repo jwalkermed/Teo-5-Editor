@@ -2,6 +2,8 @@
 // Copyright (C) 2026 The TEO-5 Editor project
 #pragma once
 
+#include <deque>
+
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <array>
 #include "MidiPortManager.h"
@@ -26,6 +28,7 @@ struct ProgramState
     int sequenceVersion = 0; // bumped whenever a program (and so its sequence) is loaded or received
     int liveSequenceVersion = 0; // bumped when the synth's own recording changes the sequence byte by byte
     Sequence beforeSynthRecording; // the sequence when RECORD last turned on at the TEO-5 (one undo step per pass)
+    bool locationKnown = true; // false when the editor opened on a sound it couldn't find in the library's banks
 };
 
 struct MidiSettings
@@ -69,6 +72,12 @@ public:
     // A new plug-in instance: if no saved state is restored within a moment (a new track rather than a saved
     // project), fetch the program that's on the TEO-5 so the editor starts from what the synth is playing.
     void fetchSynthUnlessRestored();
+    // The TEO-5 doesn't say which bank and program it's on, so the program read at startup is looked up in the
+    // library's fetched banks (set by the processor; message thread). `stored` is the library's copy of the program.
+    struct FoundProgram { int bank = 1, program = 1; bool factory = false; juce::MemoryBlock stored; };
+    std::function<std::optional<FoundProgram> (const juce::MemoryBlock& raw, const juce::String& name)> findInLibrary;
+    // Two programs make the same sound: every mapped parameter, the name and the sequence are equal.
+    bool sameSound (const juce::MemoryBlock& a, const juce::MemoryBlock& b) const;
     // The TEO-5 follows external MIDI clock (Global Clock Mode In, In Thru or In No S/S), as last read from it.
     bool clockIsExternal() const;
     // Global Clock Mode as last read (0 Off, 1 Out, 2 Out No S/S, 3 In, 4 In Thru, 5 In No S/S), or -1 if not read yet.
@@ -120,6 +129,8 @@ public:
     // Store a program in TEO-5 memory. Callers must confirm with the user first.
     void writeProgram (int panelBank, int panelProgram, bool factory, const juce::MemoryBlock& raw);
     juce::String nameOf (const juce::MemoryBlock& raw) const { return layout.readName (raw); }
+    // The panel (parameters, name or sequence) differs from the program as loaded or last written.
+    bool isEdited() const;
     // A parameter's value in the current program as it was loaded or received (not the live edit).
     std::optional<int> storedValue (const juce::String& paramId) const;
     bool hasNameLayout() const { return layout.nameOffset >= 0; }
@@ -147,6 +158,10 @@ public:
     // A note held for as long as the caller wants (e.g. while the mouse is down). Message thread.
     void noteOn (int note, int velocity);
     void noteOff (int note);
+    // Library audition while saving: put a program in the edit buffer without touching the panel, then put the
+    // panel's program back (Play is resent if it was on: the TEO-5 stops its sequencer on an edit buffer).
+    void sendToEditBuffer (const juce::MemoryBlock& raw);
+    void restoreEditBuffer();
     // Sends the program with the edited sequence as the edit buffer (the TEO-5 has no per-step messages).
     void sendSequence();
     // Seq Play after an edit buffer (which stops the TEO-5's sequencer); queued after anything already queued.
@@ -171,6 +186,12 @@ public:
 
     // Fired (message thread) when the TEO-5 changes program; ProgramState already holds the new location.
     std::function<void()> onProgramChanged;
+    // The TEO-5's sound changed without a MIDI message (e.g. GLOBAL > Basic Program on the synth) and was read back.
+    std::function<void()> onSynthProgramReplaced;
+    // While the editor is open, the synth's edit buffer is re-read every couple of seconds so changes the TEO-5
+    // doesn't send (loading its Basic Program) still show. pauseFollowing stops it (e.g. while the library is
+    // auditioning other programs in the edit buffer).
+    bool followSynth = false, pauseFollowing = false;
     // Fired (message thread) when the program-name field becomes known.
     std::function<void()> onNameFieldFound;
 
@@ -210,6 +231,8 @@ private:
     std::atomic<juce::uint32> ignoreSeqPlayUntil { 0 };
     std::atomic<bool> stateRestored { false };
     std::atomic<bool> programActivity { false }; // anything sent or received for the program since startup
+    bool startupFetch = false; // the edit buffer was requested at startup: find its location when it arrives
+    void followStartupProgram();
     bool synthRecording = false; // seqRecord as last seen by followSynthRecording
     void pushSeqPlay (int value); // audio thread
 
@@ -245,6 +268,15 @@ private:
     bool globalsReceived = false;
 
     int pendingRequestTicks = -1;
+    // Edit-buffer replies in the order they were asked for: true = a follow poll (compared, applied only if the synth
+    // changed on its own), false = a request whose reply loads the panel. Entries expire after 4 s.
+    std::deque<std::pair<bool, juce::uint32>> expectedReplies;
+    int pollTicks = 0, pollSentCount = 0, lastSentCountSeen = 0;
+    juce::uint32 lastSentChangeAt = 0;
+    juce::MemoryBlock pollCandidate; // a changed sound must be read twice in a row before the panel follows it
+    juce::MemoryBlock lastFollowed;  // the sound last loaded this way (never loaded twice in a row)
+    void pollSynth();
+    void followPolledProgram (const juce::MemoryBlock&);
     int lastBankSelect = 0;
     juce::uint32 quietUntil = 0; // no OLED parameter popups until then (message thread)
     std::vector<juce::MemoryBlock> recentDumps; // distinct edit buffers, until the name field is known

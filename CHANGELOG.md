@@ -3,6 +3,51 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.0.11 (2026-10-31)
+
+**Changed**
+- **NOT SENT** now means "different from what's on the TEO-5". Swapping programs back to where they were, or undoing
+  the change, clears the mark; Redo brings it back. The library remembers what the synth holds in each User slot
+  (from the last fetch, send or WRITE) and compares with that. Undoing a change that was already sent marks the slot
+  again, since the synth now has the newer version.
+
+**Fixed**
+- The OLED flickered between its normal page and "TEO-5 / <program name>" every few seconds. Programs whose stored
+  values are outside a control's range (for example Reverb Size 255) looked changed every time the editor re-read the
+  synth, so it loaded them again and again. Such values now count as equal, and a sound is never loaded twice in a row.
+
+## 1.0.10 (2026-10-31)
+
+**Changed**
+- **WRITE** now saves through the library. Pressing it opens the library with the panel's program selected, and a
+  Save pop-up appears over the panel. Click a slot in a TEO-5 User bank or in MY BANKS to choose where the program
+  goes. The program stored in that slot goes into the TEO-5's edit buffer, so you can play it from your MIDI
+  controller or the synth's keys to hear what you'd replace. If the panel's program isn't in a User bank or one of
+  your banks, User 1 slot 01 is chosen to start with. **Confirm** saves (a TEO-5 User slot is written to the synth's
+  memory; MY BANKS keeps it in the library only), closes the library and shows the saved program on the panel.
+  **Cancel** puts your edit back and closes the library.
+- Library: **+ Current** is replaced by **Save all changes**, which writes every NOT SENT program to the TEO-5 after
+  listing what it overwrites on the synth (Confirm or Cancel). **+ Bank** is now **New Bank**. The up-arrow "write to
+  TEO-5" icon is gone from the rows (Write to TEO-5 memory is still in the right-click menu).
+- Closing the library with LIBRARY while changes aren't sent asks whether to send them first.
+- Mod matrix: the top row is now **Clear all**, **Revert**, **Undo**, **Redo**, then the number of active slots.
+
+**Added**
+- Every bank in MY BANKS ends with an Empty slot to save into.
+- A **?** left of LIBRARY opens a guide to the library.
+- Mod matrix **Clear all** (empties all 16 slots) and **Revert** (all 16 back as stored in the program). Both are one
+  Undo step.
+- The OLED shows **EDITED** in red under the program name whenever the sound differs from the stored program.
+- When the editor opens on a new track, BANK, FACTORY, the program buttons and the display show where the synth's
+  sound comes from, found among the banks the library has fetched (the TEO-5 doesn't report it). A sound edited on
+  the synth is found by its name and shows EDITED; one the library doesn't know shows "---". A saved project still
+  restores its own program.
+
+**Fixed**
+- Loading the Basic Program on the TEO-5 itself (GLOBAL > Basic Program) now shows on the panel, the OLED and the
+  mod matrix. The synth sends nothing when you do this, so while the editor is open it re-reads the synth's sound
+  every two seconds; your own edits are never overwritten by this.
+
 ## 1.0.9 (2026-10-30)
 
 **Fixed**

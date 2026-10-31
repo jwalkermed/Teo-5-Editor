@@ -46,6 +46,7 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
     addAndMakeVisible (globalTab);
     addAndMakeVisible (programTab);
     addChildComponent (guide);
+    addChildComponent (library.getSavePanel()); // over the panel, beside the library, while WRITE chooses a slot
     guideButton.setTooltip ("How the front panel works");
     guideButton.onClick = [this] { setGuideOpen (! guide.isVisible()); };
     guide.onClose = [this] { setGuideOpen (false); };
@@ -58,7 +59,7 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
     globalTab.onClick = [this] { setGlobalOpen (! globalDrawer.isVisible()); };
     programTab.onClick = [this] { setProgramOpen (! programDrawer.isVisible()); };
     drawerTab.onClick = [this] { setDrawerOpen (! drawer.isVisible()); };
-    libraryTab.onClick = [this] { setLibraryOpen (! library.isVisible()); };
+    libraryTab.onClick = [this] { handlePanelAction ("library"); };
     modMatrixTab.onClick = [this] { setModMatrixOpen (! modMatrix.isVisible()); };
     sequencerTab.onClick = [this] { setSequencerOpen (! sequencer.isVisible()); };
 
@@ -148,18 +149,43 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
             || (a == "program" && programDrawer.isVisible())
             || (a == "record" && sequencer.isVisible() && sequencer.isRecording());
     };
+    panel.isEdited = [this] { return ! comparing && processor.getMidiSync().isEdited(); };
     panel.getOled().onDoubleClick = [this] { renameCurrentProgram(); };
     processor.getMidiSync().onRemoteChange = [this] (const juce::String& id) { panel.showParameter (id); };
     processor.getMidiSync().onProgramChanged = [this]
     {
         comparing = false;
         browseLibraryBank = -1; // the synth changed program: the sequencer header follows it
-        panel.showProgram (processor.getProgramState().factory);
+        showSynthLocation();
     };
     processor.getMidiSync().onNameFieldFound = [this] { processor.getTransfer().detectNamesFromLibrary(); };
 
-    panel.showProgram (p.getProgramState().factory); // restore FACTORY + display from the saved state
+    showSynthLocation(); // restore FACTORY + display from the saved state
     library.isFactoryPanel = [this] { return panel.isFactory(); };
+    library.onSaveFinished = [this] (bool saved, std::optional<teo5::HardwareTransfer::BankAddress> written, int program)
+    {
+        auto& ps = processor.getProgramState();
+        if (written)
+        {
+            // Written to a User slot: the panel now shows that location (no program change is sent).
+            ps.bank = written->panelBank;
+            ps.program = program;
+            ps.factory = false;
+            ps.locationKnown = true;
+            browseLibraryBank = -1;
+        }
+        setLibraryOpen (false);
+        showSynthLocation();
+        if (saved)
+            oledMessage ("WRITE", written ? "Stored in " + teo5::HardwareTransfer::locationName (*written, program) : ps.name + " saved");
+    };
+    // The TEO-5's sound changed without telling (e.g. its GLOBAL > Basic Program): the panel has followed it.
+    processor.getMidiSync().followSynth = true;
+    processor.getMidiSync().onSynthProgramReplaced = [this]
+    {
+        comparing = false;
+        oledMessage ("TEO-5", processor.getProgramState().name);
+    };
     library.onShowMessage = [this] (const juce::String& s) { oledMessage ("LIBRARY", s); };
 
     const double aspect = (double) PanelComponent::designWidth / (double) PanelComponent::designHeight;
@@ -196,6 +222,8 @@ TEO5Editor::~TEO5Editor()
     processor.getMidiSync().onRemoteChange = nullptr;
     processor.getMidiSync().onProgramChanged = nullptr;
     processor.getMidiSync().onNameFieldFound = nullptr;
+    processor.getMidiSync().onSynthProgramReplaced = nullptr;
+    processor.getMidiSync().followSynth = false;
 }
 
 void TEO5Editor::handlePanelAction (const juce::String& action)
@@ -217,7 +245,13 @@ void TEO5Editor::handlePanelAction (const juce::String& action)
         oledMessage ("PANIC", "All notes off");
     }
     else if (action == "library")
-        setLibraryOpen (! library.isVisible());
+    {
+        if (library.isVisible())
+            library.closeWithUnsentCheck ([safe = juce::Component::SafePointer<TEO5Editor> (this)]
+                                          { if (safe != nullptr) safe->setLibraryOpen (false); });
+        else
+            setLibraryOpen (true);
+    }
     else if (action == "modmatrix")
         setModMatrixOpen (! modMatrix.isVisible());
     else if (action == "record")
@@ -315,17 +349,18 @@ void TEO5Editor::writeCurrentProgram()
     auto raw = currentProgramOrFetch ("WRITE");
     if (raw.isEmpty())
         return;
-    // Ask where to store it, starting at the panel's location (or User 1-01 if FACTORY is lit: factory programs
-    // can't be changed).
-    const bool factory = panel.isFactory();
-    teo5::chooseWriteLocation (this, ps.name, factory ? 1 : ps.bank, factory ? 1 : ps.program, processor.getLibrary(),
-                               [this, raw] (int bank, int prog)
-                               {
-                                   auto& s = processor.getMidiSync();
-                                   s.writeProgram (bank, prog, false, raw);
-                                   s.setOriginal (raw);
-                                   oledMessage ("WRITE", "Stored in " + teo5::HardwareTransfer::locationName ({ bank, false }, prog));
-                               });
+    // The library opens as a picker: choose a slot in a TEO-5 User bank or in MY BANKS (see LibraryDrawer::beginSave).
+    const auto ref = currentLibraryProgram();
+    juce::String from;
+    if (const auto& banks = processor.getLibrary().banks(); juce::isPositiveAndBelow (ref.bank, (int) banks.size())
+                                                             && banks[(size_t) ref.bank].kind == teo5::LibraryBank::Kind::Disk)
+        from = banks[(size_t) ref.bank].name + " " + juce::String (ref.index + 1).paddedLeft ('0', 2);
+    else if (ps.locationKnown)
+        from = teo5::HardwareTransfer::locationName ({ ps.bank, panel.isFactory() }, ps.program);
+    if (processor.getMidiSync().isEdited())
+        from += from.isEmpty() ? "your edit" : " (edited)";
+    setLibraryOpen (true);
+    library.beginSave (raw, ps.name, from, ref);
 }
 
 // The library entry for the program on the panel: the one last loaded from the library if it's still the one
@@ -494,8 +529,22 @@ void TEO5Editor::closeLeftDrawersExcept (juce::Component& keep)
     if (&keep != &sequencer && sequencer.isVisible()) setSequencerOpen (false);
 }
 
+void TEO5Editor::showSynthLocation()
+{
+    const auto& ps = processor.getProgramState();
+    if (ps.locationKnown)
+        panel.showProgram (ps.factory);
+    else
+        panel.showUnknownLocation();
+}
+
 void TEO5Editor::setLibraryOpen (bool shouldBeOpen)
 {
+    if (! shouldBeOpen && library.isSaving())
+    {
+        library.cancelSave(); // closing the drawer any other way cancels the save (and closes it)
+        return;
+    }
     if (shouldBeOpen)
         closeLeftDrawersExcept (library);
     library.setVisible (shouldBeOpen);
@@ -736,6 +785,11 @@ void TEO5Editor::resized()
 
     const int libraryW = juce::jmin (900, getWidth() * 11 / 20); // two columns: TEO-5 | MY BANKS
     library.setBounds (cheek, 0, libraryW, getHeight());
+    {
+        auto& save = library.getSavePanel();
+        const int free = getWidth() - cheek - library.getRight();
+        save.setTopLeftPosition (library.getRight() + juce::jmax (8, (free - save.getWidth()) / 2), juce::jmax (8, getHeight() / 5));
+    }
     const int modMatrixW = juce::jmin (540, getWidth() / 2);
     modMatrix.setBounds (cheek, 0, modMatrixW, getHeight());
 

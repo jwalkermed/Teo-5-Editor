@@ -188,7 +188,9 @@ choice.</p>
   <li>With no drawer open, the <b>arrow keys</b> do the same: Left/Right step the program, Up/Down the bank.</li>
 </ul>
 <p>Each change sends Bank Select and Program Change to the TEO-5 and then reads the new program, so the panel,
-mod matrix and sequencer all show the sound you're hearing.</p>
+mod matrix and sequencer all show the sound you're hearing. Changes made on the synth itself follow too, including
+loading its Basic Program (GLOBAL &gt; Basic Program), which the TEO-5 doesn't announce over MIDI: while the editor is
+open it re-reads the synth's sound every couple of seconds, and never overwrites your own edits doing so.</p>
 
 <h2>COMPARE</h2>
 <p>Switches between your edited sound and the program as it was loaded, like COMPARE on the synth. Press it again
@@ -200,11 +202,22 @@ loaded, or as last written with WRITE. It sends that program to the TEO-5's edit
 If you have edits, it asks first, because they can't be brought back. Hover over it for a reminder.</p>
 
 <h2>WRITE</h2>
-<p>Stores the current sound in the TEO-5's memory. A dialog lets you choose any User bank and program, starting at
-the current location, and names the program the library knows is there:</p>
-{{img library-write-write|Writing to TEO-5 memory: choose the User bank and program, then Overwrite.|48%}}
-<p>Factory locations are never offered. Until you WRITE, all edits live only in the edit buffer, and changing
-program discards them (the library and DAW project can still keep them).</p>
+<p>Saves the current sound. WRITE opens the library with the panel's program selected, and a <b>Save program</b>
+pop-up appears over the panel:</p>
+{{shot library-write|Saving with WRITE: the slot chosen in the library is outlined in amber, and its program is in the edit buffer to audition.|0|1|0|1|100%}}
+<ul>
+  <li><b>Choose where:</b> click a slot in a TEO-5 User bank or in one of your banks (MY BANKS). Every bank in MY
+  BANKS ends with an Empty slot for a new program. Factory banks can't be chosen. If the panel's program isn't in a
+  User bank or one of your banks, User 1 slot 01 is chosen to start with.</li>
+  <li><b>Audition:</b> the program stored in the chosen slot goes into the TEO-5's edit buffer. Play your MIDI
+  controller or the synth's keys to hear the sound you would replace. The panel keeps showing your edit.</li>
+  <li><b>Confirm</b> saves. Into a TEO-5 User slot it's written to the synth's memory (and the library); into MY
+  BANKS it's kept in the library only. The library closes and the panel shows the saved program.</li>
+  <li><b>Cancel</b> (or LIBRARY, or Esc) puts your edit back in the edit buffer and closes the library.</li>
+</ul>
+<p>Until you save, all edits live only in the edit buffer, and changing program discards them (the DAW project can
+still keep them). The OLED shows <b>EDITED</b> in red under the program name while the sound differs from the stored
+program.</p>
 
 <h1>6. Modulation from the panel (right-click)</h1>
 <p>Right-click any knob or button that the TEO-5 can modulate (for example CUTOFF, the LFO rates and amounts, effect
@@ -235,15 +248,18 @@ you edit another slot or close the drawer.</p>
   number of programs.</li>
 </ul>
 <p>Banks start collapsed; click the arrow to open one. Drag a bank's name to reorder banks within a pane.
-Double-click a bank's name to rename it.</p>
+Double-click a bank's name to rename it. Every bank in MY BANKS ends with an <b>Empty</b> slot, so there's always room
+to save or drop one more program. The <b>?</b> left of LIBRARY opens a guide to the library.</p>
 
 <h2>Buttons</h2>
 <table>
   <tr><td>Fetch</td><td>Reads from the TEO-5: the edit buffer, the current bank, or all User/Factory banks (with a
   progress bar). Fetching a bank again replaces the earlier copy.</td></tr>
   <tr><td>Import</td><td>Adds <i>.syx</i> files (single programs or banks). You can also drop files from Finder.</td></tr>
-  <tr><td>+ Current</td><td>Saves the sound on the panel into the selected bank.</td></tr>
-  <tr><td>+ Bank</td><td>Makes a new empty bank in MY BANKS.</td></tr>
+  <tr><td>Save all changes</td><td>Writes every NOT SENT program in your TEO-5 User banks to the synth. It lists
+  what will be overwritten on the TEO-5 (for example <i>U1-05: "Brass Hit" is overwritten by "Pulse Ping"</i>) and
+  asks you to Confirm or Cancel. The NOT SENT marks go once the programs are sent.</td></tr>
+  <tr><td>New Bank</td><td>Asks for a name and makes a new empty bank in MY BANKS.</td></tr>
   <tr><td>Undo / Redo</td><td>Undoes any library change (also Cmd+Z / Shift+Cmd+Z). The status line names what was
   undone.</td></tr>
   <tr><td>TEO-5 &rarr; Library</td><td>Fetches all 16 User banks (warns first if the library has changes not yet
@@ -258,8 +274,8 @@ Double-click a bank's name to rename it.</p>
 <ul>
   <li><b>Click</b> a program to load it into the TEO-5's edit buffer and hear it. (Shift-click and Cmd-click only
   select.)</li>
-  <li>The icons on each row: <b>star</b> (favourite), <b>write to TEO-5 memory</b>, <b>export .syx</b>,
-  <b>rename</b>, <b>delete</b>. Factory programs show only the star, write and export.</li>
+  <li>The icons on each row: <b>star</b> (favourite), <b>export .syx</b>, <b>rename</b>, <b>delete</b>. Factory
+  programs show only the star and export.</li>
   <li><b>Right-click</b> a program for more: load, write, rename, tags, favourite, copy, paste, duplicate, export,
   delete. Right-click a bank to rename, import, export, send it to the TEO-5, fetch it again, or delete it.</li>
   <li>Tags appear on the right of the row; give a program several tags (for example <i>pad, ambient</i>).</li>
@@ -275,10 +291,13 @@ Double-click a bank's name to rename it.</p>
 </ul>
 
 <h2>NOT SENT and Empty</h2>
-<p>Changes to the TEO-5 User banks in the library aren't on the synth until you send them. Such slots are marked
-<b>NOT SENT</b> in red, and the bank header counts them. Deleting a program from a User bank leaves an <b>Empty</b>
-slot; when you send the bank, the editor writes the TEO-5's Basic Program there. Use <b>Library &rarr; TEO-5</b>,
-<i>Send bank</i> or the row's write icon to send.</p>
+<p>Changes to the TEO-5 User banks in the library aren't on the synth until you send them. A slot whose program
+differs from what the TEO-5 holds there is marked <b>NOT SENT</b> in red, and the bank header counts them. The
+library remembers what the synth has in each slot (from the last fetch, send or WRITE), so putting programs back
+where they were, or Undo, clears the mark again. Deleting a program from a User bank leaves an <b>Empty</b>
+slot; when you send the bank, the editor writes the TEO-5's Basic Program there. Use <b>Save all changes</b>,
+<b>Library &rarr; TEO-5</b> or <i>Send bank</i> to send. If you close the library with the LIBRARY button while
+changes aren't sent, it asks whether to send them first (this writes the patches to the TEO-5's memory).</p>
 <div class="tip">Factory banks are read-only: they can't be renamed, deleted, pasted into or written to.</div>
 
 <h2>Where the library is kept</h2>
@@ -300,10 +319,13 @@ the program's modulation slots at once.</p>
   zero.</li>
   <li><b>Right-click</b> a slot or its amount: <i>Clear amount</i>, <i>Clear slot</i>, or <i>Restore slot to patch
   default</i> (its stored source, amount and destination).</li>
-  <li><b>Undo / Redo</b> (top right) step through your changes in the drawer; the hint line says what was undone.
+  <li><b>Clear all</b> (top right) empties all 16 slots; <b>Revert</b> puts all 16 back as stored in the program.
+  Each is one Undo step.</li>
+  <li><b>Undo / Redo</b> step through your changes in the drawer; the hint line says what was undone.
   The history starts over when you change program.</li>
 </ul>
-<p>The header counts the active slots. Changes are sent to the edit buffer as you make them.</p>
+<p>The number of active slots is at the far right of the header. Changes are sent to the edit buffer as you make
+them.</p>
 
 <h1>9. The Sequencer drawer</h1>
 <p>The TEO-5 stores a step sequence in every program: up to 64 steps, each playing up to five notes. Open the
@@ -413,7 +435,10 @@ and band-pass, envelope options, voice settings, tunings and more.</p>
   <li><b>Projects remember the sound.</b> When you save, the project stores the program, including its sequence.
   When you open the project again, the editor sends that sound to the TEO-5's edit buffer about half a second later
   (it never writes memory).</li>
-  <li>A new instance on a fresh track reads whatever sound is on the synth.</li>
+  <li>A new instance on a fresh track reads whatever sound is on the synth. The TEO-5 doesn't say which bank and
+  program that is, so the editor looks for the sound in the banks the library has fetched and sets BANK, FACTORY,
+  the program buttons and the display to match. A sound edited on the synth is found by its name and shows EDITED;
+  a sound the library doesn't know shows <b>---</b> on the display.</li>
   <li><b>Live's transport and the sequencer:</b> with PLAY on in the sequencer, each Live start restarts the sequence
   at step 1 and Live's stop stops it.</li>
   <li><b>Recording the sequencer into Live:</b> turn on <i>MIDI Arp Notes</i> in the GLOBAL drawer, make a MIDI track

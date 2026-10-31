@@ -134,6 +134,7 @@ public:
         juce::String bpm { "120" }, clkDiv { "1/16" }, name { "It's an Oberheim" };
         juce::String bpmLabel { "BPM" }; // "EXT BPM" while the TEO-5 follows external clock
         juce::String arpMode { "Up+Down" }, effect { "Chorus" };
+        bool edited = false; // the sound differs from the stored program: EDITED in red under the name
     };
 
     void setHome (const HomePage& h) { home = h; repaint(); }

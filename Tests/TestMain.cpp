@@ -566,6 +566,82 @@ public:
             lib.removeBank (b);
         }
 
+        beginTest ("WRITE saves into a slot; the library knows what's on the synth");
+        {
+            LibraryModel lib (dir);
+            std::vector<LibraryProgram> hw;
+            for (int i = 0; i < 16; ++i)
+                hw.push_back (LibraryModel::makeProgram (fakeProgram (120 + i), "W" + juce::String (i + 1), "hw"));
+            const int hb = lib.upsertHardwareBank ("TEO-5 User 9", 9, false, hw);
+            expectEquals (lib.synthSlot (9, 4).name, juce::String ("W5"));
+
+            // Written to the synth: replaces the slot, not NOT SENT, and the synth now has it.
+            auto ref = lib.saveProgram ({ hb, 4 }, fakeProgram (200), "Saved Lead", true);
+            expect (ref == ProgramRef (hb, 4));
+            expectEquals (lib.program (ref)->name, juce::String ("Saved Lead"));
+            expect (! lib.program (ref)->unsent);
+            expectEquals (lib.synthSlot (9, 4).name, juce::String ("Saved Lead"));
+
+            // A change not sent keeps the synth's name until the bank is sent.
+            lib.swapPrograms ({ hb, 0 }, { hb, 1 });
+            expect (lib.program ({ hb, 0 })->unsent);
+            expectEquals (lib.synthSlot (9, 0).name, juce::String ("W1"));
+            lib.clearUnsent (hb);
+            expectEquals (lib.synthSlot (9, 0).name, juce::String ("W2"));
+            expect (lib.save());
+            LibraryModel reloaded (dir);
+            expectEquals (reloaded.synthSlot (9, 0).name, juce::String ("W2"), "synth names are saved");
+
+            // One of your banks: the slot after the last program appends; factory banks refuse.
+            const int mine = lib.addBank ("Mine");
+            lib.insertProgram (mine, -1, LibraryModel::makeProgram (fakeProgram (210), "A", "test"));
+            ref = lib.saveProgram ({ mine, 1 }, fakeProgram (211), "B", false);
+            expect (ref == ProgramRef (mine, 1));
+            expectEquals ((int) lib.banks()[(size_t) mine].programs.size(), 2);
+            const int fb = lib.upsertHardwareBank ("TEO-5 Factory 9", 9, true, hw);
+            expect (! lib.saveProgram ({ fb, 0 }, fakeProgram (212), "No", false).isValid());
+            lib.removeBank (fb);
+            lib.removeBank (mine);
+            lib.removeBank (hb);
+        }
+
+        beginTest ("NOT SENT means different from what's on the TEO-5");
+        {
+            LibraryModel lib (dir);
+            std::vector<LibraryProgram> hw;
+            for (int i = 0; i < 16; ++i)
+                hw.push_back (LibraryModel::makeProgram (fakeProgram (300 + i), "N" + juce::String (i + 1), "hw"));
+            const int hb = lib.upsertHardwareBank ("TEO-5 User 10", 10, false, hw);
+            const int hb2 = lib.upsertHardwareBank ("TEO-5 User 11", 11, false, hw);
+            auto unsentCount = [&lib] (int b) { int n = 0; for (auto& p : lib.banks()[(size_t) b].programs) n += p.unsent ? 1 : 0; return n; };
+            expectEquals (unsentCount (hb), 0, "a fetched bank matches the synth");
+
+            lib.swapPrograms ({ hb, 2 }, { hb, 5 });
+            expectEquals (unsentCount (hb), 2, "a swap marks both slots");
+            lib.swapPrograms ({ hb, 2 }, { hb, 5 });
+            expectEquals (unsentCount (hb), 0, "swapping back clears the marks");
+
+            lib.swapPrograms ({ hb, 0 }, { hb2, 1 }); // between banks
+            expect (unsentCount (hb) == 1 && unsentCount (hb2) == 1);
+            lib.getUndoManager().undo();
+            expect (unsentCount (hb) == 0 && unsentCount (hb2) == 0, "undo clears the marks");
+            lib.getUndoManager().redo();
+            expect (unsentCount (hb) == 1 && unsentCount (hb2) == 1, "redo brings them back");
+
+            lib.clearUnsent (hb); // sent
+            expectEquals (unsentCount (hb), 0);
+            lib.getUndoManager().undo(); // the synth keeps what was sent: now the library differs from it
+            expectEquals (unsentCount (hb), 1, "undoing a sent change marks the slot again");
+
+            lib.removePrograms ({ ProgramRef (hb2, 3) });
+            expect (lib.program ({ hb2, 3 })->unsent, "a deleted slot is NOT SENT");
+            lib.clearUnsent (hb2);
+            expect (! lib.program ({ hb2, 3 })->unsent, "and not after it's sent (the synth has the Basic Program there)");
+            expectEquals (lib.synthSlot (11, 3).name, juce::String ("Basic Program"));
+            lib.removeBank (hb2);
+            lib.removeBank (hb);
+        }
+
         beginTest ("Banks can be reordered");
         {
             LibraryModel lib (dir);
