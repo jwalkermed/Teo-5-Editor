@@ -35,6 +35,7 @@ public:
     void setGlobalOpen (bool);
     void setProgramOpen (bool);
     void setSkinsOpen (bool);
+    void startNewSkin() { setSkinsOpen (true); skinsDrawer.startNew(); } // the SKINS drawer's skin editor
     void setLibraryOpen (bool);
     void setModMatrixOpen (bool);
     void showModulationMenu (const juce::String& paramId);

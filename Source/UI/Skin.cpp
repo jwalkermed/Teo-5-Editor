@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
 #include "Skin.h"
+#include <cmath>
 #include <map>
+#include <optional>
 #include <vector>
 
 namespace teo5
@@ -10,8 +12,8 @@ namespace
 {
 struct SkinDef
 {
-    const char* name;
-    const char* description;
+    juce::String name;
+    juce::String description;
     bool light;                       // light drawers (dark text)
     juce::Colour faceTop, faceBottom; // panel face gradient
     juce::Colour tint;                // hue given to dark neutrals (drawers, cheeks, knob bodies)
@@ -20,11 +22,15 @@ struct SkinDef
     float accentHue, accentSat, accentBright; // pinstripes, selections
     float ledHue;                     // LEDs, lit buttons, the bank display
     float ledSat = 1.0f;              // 0 = white LEDs
+    float drawerScale = 1.0f;         // custom skins: dark drawer shades scaled to the chosen drawer colour
+    juce::String id;                  // custom skins: their identity (saved choice, file)
+    Skin::Custom custom;              // custom skins: the colours chosen
 };
 
-const std::vector<SkinDef>& defs()
+// The built-in skins, then the user's (custom) ones.
+std::vector<SkinDef>& defs()
 {
-    static const std::vector<SkinDef> d = {
+    static std::vector<SkinDef> d = {
         { "Current", "Charcoal, blue pinstripes, red LEDs. As on the TEO-5.", false,
           juce::Colour (0xff2e2f33), juce::Colour (0xff26272a), juce::Colour (0xff2a2b2e), 0.0f, juce::Colour (0xffe6e6e6),
           0.585f, 0.77f, 0.82f, 0.03f },
@@ -59,11 +65,105 @@ const std::vector<SkinDef>& defs()
     return d;
 }
 
+constexpr int builtInSkins = 10;
+
+juce::File customFile()
+{
+    if (auto f = juce::SystemStats::getEnvironmentVariable ("TEO5_CUSTOM_SKINS_FILE", {}); f.isNotEmpty())
+        return juce::File (f);
+    return juce::File::getSpecialLocation (juce::File::userHomeDirectory).getChildFile ("Library/TEO5Editor/custom-skins.json");
+}
+
+// A skin made from the six colours chosen in the skin editor.
+SkinDef defFor (const Skin::Custom& c, const juce::String& id)
+{
+    SkinDef d;
+    d.name = c.name;
+    d.description = "Your skin";
+    d.light = c.lightDrawers;
+    d.faceTop = c.panel.interpolatedWith (juce::Colours::white, 0.04f);
+    d.faceBottom = c.panel.interpolatedWith (juce::Colours::black, 0.12f);
+    d.tint = c.drawers;
+    d.tintAmount = 0.625f; // the drawers take the chosen colour's strength (see mapFor)
+    d.text = c.lettering;
+    d.accentHue = c.pinstripes.getHue();
+    d.accentSat = c.pinstripes.getSaturation();
+    d.accentBright = c.pinstripes.getBrightness();
+    d.ledHue = c.leds.getHue();
+    d.ledSat = juce::jlimit (0.0f, 1.15f, c.leds.getSaturation() / 0.89f);
+    d.drawerScale = juce::jlimit (0.3f, 4.0f, c.drawers.getBrightness() / 0.11f); // 0.11: the design's drawer background
+    d.id = id;
+    d.custom = c;
+    return d;
+}
+
+juce::var toVar (const Skin::Custom& c, const juce::String& id)
+{
+    auto* o = new juce::DynamicObject();
+    o->setProperty ("id", id);
+    o->setProperty ("name", c.name);
+    o->setProperty ("panel", c.panel.toDisplayString (false));
+    o->setProperty ("lettering", c.lettering.toDisplayString (false));
+    o->setProperty ("pinstripes", c.pinstripes.toDisplayString (false));
+    o->setProperty ("leds", c.leds.toDisplayString (false));
+    o->setProperty ("drawers", c.drawers.toDisplayString (false));
+    o->setProperty ("lightDrawers", c.lightDrawers);
+    return juce::var (o);
+}
+
+std::optional<Skin::Custom> fromVar (const juce::var& v)
+{
+    auto colour = [&v] (const char* key) { return juce::Colour::fromString ("ff" + v.getProperty (key, "000000").toString()); };
+    if (! v.isObject() || v.getProperty ("name", {}).toString().isEmpty())
+        return std::nullopt;
+    return Skin::Custom { v.getProperty ("name", {}).toString(), colour ("panel"), colour ("lettering"), colour ("pinstripes"),
+                          colour ("leds"), colour ("drawers"), (bool) v.getProperty ("lightDrawers", false) };
+}
+
+void loadCustom()
+{
+    static bool loaded = false;
+    if (std::exchange (loaded, true))
+        return;
+    if (auto* arr = juce::JSON::parse (customFile()).getArray())
+        for (auto& v : *arr)
+            if (auto c = fromVar (v))
+                defs().push_back (defFor (*c, v.getProperty ("id", juce::Uuid().toString()).toString()));
+}
+
+void saveCustom()
+{
+    juce::Array<juce::var> arr;
+    for (int i = builtInSkins; i < (int) defs().size(); ++i)
+        arr.add (toVar (defs()[(size_t) i].custom, defs()[(size_t) i].id));
+    if (customFile().getParentDirectory().createDirectory())
+        customFile().replaceWithText (juce::JSON::toString (juce::var (arr)));
+}
+
 juce::File skinFile()
 {
     if (auto f = juce::SystemStats::getEnvironmentVariable ("TEO5_SKIN_FILE", {}); f.isNotEmpty())
         return juce::File (f); // tools and tests: never the user's choice
     return juce::File::getSpecialLocation (juce::File::userHomeDirectory).getChildFile ("Library/TEO5Editor/skin.txt");
+}
+
+// The saved choice: a built-in skin's number, or "custom:<id>" (a number would point elsewhere once one is deleted).
+int indexFor (const juce::String& saved)
+{
+    loadCustom();
+    if (saved.startsWith ("custom:"))
+    {
+        for (int i = builtInSkins; i < (int) defs().size(); ++i)
+            if (defs()[(size_t) i].id == saved.fromFirstOccurrenceOf (":", false, false))
+                return i;
+        return 0;
+    }
+    return juce::jlimit (0, builtInSkins - 1, saved.getIntValue());
+}
+
+juce::String savedFormOf (int index)
+{
+    return index >= builtInSkins ? "custom:" + defs()[(size_t) index].id : juce::String (index);
 }
 
 int& currentIndex()
@@ -73,7 +173,7 @@ int& currentIndex()
         auto v = juce::SystemStats::getEnvironmentVariable ("TEO5_SKIN", {});
         if (v.isEmpty())
             v = skinFile().loadFileAsString().trim();
-        return juce::jlimit (0, (int) defs().size() - 1, v.getIntValue());
+        return indexFor (v);
     }();
     return index;
 }
@@ -130,7 +230,8 @@ juce::Colour mapFor (const SkinDef& s, int index, juce::uint32 argb, Skin::Area 
         if (b > 0.75f || a < 0.6f)
             return c; // whites and translucent shading stay
         const float amount = area == Skin::Area::Drawer ? s.tintAmount : s.tintAmount * 0.35f;
-        return juce::Colour::fromHSV (s.tint.getHue(), s.tint.getSaturation() * amount * 1.6f, b, a);
+        const float nb = area == Skin::Area::Drawer ? juce::jmin (0.92f, b * s.drawerScale) : b;
+        return juce::Colour::fromHSV (s.tint.getHue(), juce::jmin (1.0f, s.tint.getSaturation() * amount * 1.6f), nb, a);
     }
     if (h < 0.075f || h > 0.92f) // red/orange: LEDs, lit buttons, segments, red text
         return juce::Colour::fromHSV (s.ledHue, sat * s.ledSat, b, a);
@@ -168,11 +269,82 @@ juce::ChangeBroadcaster& broadcaster()
 }
 } // namespace
 
-int Skin::count() { return (int) defs().size(); }
+int Skin::count() { loadCustom(); return (int) defs().size(); }
+int Skin::builtInCount() { return builtInSkins; }
+bool Skin::isCustom (int index) { return index >= builtInSkins && index < count(); }
 Skin::Info Skin::info (int index)
 {
     const auto& d = defs()[(size_t) juce::jlimit (0, count() - 1, index)];
     return { d.name, d.description };
+}
+
+// The six colours of any skin (to start a custom skin from the one in use).
+Skin::Custom Skin::coloursOf (int index)
+{
+    index = juce::jlimit (0, count() - 1, index);
+    const auto& d = defs()[(size_t) index];
+    if (isCustom (index))
+        return d.custom;
+    return { d.name + " copy", d.faceTop.interpolatedWith (d.faceBottom, 0.5f), mapFor (d, index, 0xffe6e6e6, Area::Text),
+             mapFor (d, index, 0xff2f7fd0, Area::Panel), mapFor (d, index, 0xffff4a1c, Area::Panel),
+             mapFor (d, index, 0xff181a1c, Area::Drawer), d.light };
+}
+
+double Skin::contrast (juce::Colour a, juce::Colour b)
+{
+    auto lum = [] (juce::Colour c)
+    {
+        auto ch = [] (juce::uint8 v) { const double x = v / 255.0; return x <= 0.03928 ? x / 12.92 : std::pow ((x + 0.055) / 1.055, 2.4); };
+        return 0.2126 * ch (c.getRed()) + 0.7152 * ch (c.getGreen()) + 0.0722 * ch (c.getBlue());
+    };
+    const double x = lum (a), y = lum (b);
+    return (juce::jmax (x, y) + 0.05) / (juce::jmin (x, y) + 0.05);
+}
+
+int Skin::addCustom (const Custom& c, bool save)
+{
+    loadCustom();
+    defs().push_back (defFor (c, juce::Uuid().toString()));
+    if (save)
+        saveCustom();
+    return count() - 1;
+}
+
+void Skin::updateCustom (int index, const Custom& c, bool save)
+{
+    if (! isCustom (index))
+        return;
+    defs()[(size_t) index] = defFor (c, defs()[(size_t) index].id);
+    if (save)
+        saveCustom();
+    if (index == currentIndex())
+        reapply (true); // the skin in use changed: re-colour everything
+}
+
+void Skin::removeCustom (int index)
+{
+    if (! isCustom (index))
+        return;
+    const auto wasCurrent = currentIndex();
+    defs().erase (defs().begin() + index);
+    saveCustom();
+    // Indices after it moved down: forget their recorded colours (the registry is keyed by index).
+    for (auto it = origins().begin(); it != origins().end();)
+        it = it->first.first >= index ? origins().erase (it) : std::next (it);
+    if (wasCurrent == index)
+        select (0);
+    else if (wasCurrent > index)
+        currentIndex() = wasCurrent - 1;
+}
+
+bool Skin::exportCustom (int index, const juce::File& file)
+{
+    return isCustom (index) && file.replaceWithText (juce::JSON::toString (toVar (defs()[(size_t) index].custom, {})));
+}
+
+std::optional<Skin::Custom> Skin::readCustom (const juce::File& file)
+{
+    return fromVar (juce::JSON::parse (file));
 }
 int Skin::current() { return currentIndex(); }
 juce::ChangeBroadcaster& Skin::changes() { return broadcaster(); }
@@ -191,6 +363,21 @@ void Skin::select (int index, bool temporary)
     if (index == currentIndex())
         return;
     currentIndex() = index;
+    reapply (! temporary);
+    if (! temporary && skinFile().getParentDirectory().createDirectory())
+        skinFile().replaceWithText (savedFormOf (index));
+}
+
+void Skin::rememberChoice()
+{
+    if (skinFile().getParentDirectory().createDirectory())
+        skinFile().replaceWithText (savedFormOf (currentIndex()));
+}
+
+// The current skin (or its colours) changed: named colours, look-and-feels, then (notify) every open editor.
+void Skin::reapply (bool notify)
+{
+    const int index = currentIndex();
     for (auto* c : skinColours())
         c->refresh();
     for (auto& e : lookAndFeels())
@@ -199,12 +386,8 @@ void Skin::select (int index, bool temporary)
         if (e.after)
             e.after();
     }
-    if (! temporary)
-    {
-        if (skinFile().getParentDirectory().createDirectory())
-            skinFile().replaceWithText (juce::String (index));
+    if (notify)
         broadcaster().sendSynchronousChangeMessage();
-    }
 }
 
 void Skin::registerLookAndFeel (juce::LookAndFeel_V4& lnf, std::function<void()> afterChange)
@@ -238,7 +421,7 @@ void Skin::recolourComponents (juce::Component& root, int fromSkin)
             if (it == origins().end())
                 continue;
             const auto mapped = mapFor (defs()[(size_t) to], to, it->second.argb, it->second.area);
-            origins().emplace (std::make_pair (to, mapped.getARGB() | 0xff000000u), it->second);
+            origins().insert_or_assign (std::make_pair (to, mapped.getARGB() | 0xff000000u), it->second);
             changes.push_back ({ name.substring (6).getHexValue32(), mapped.withAlpha (shown.getFloatAlpha()) });
         }
         for (auto& [id, colour] : changes)

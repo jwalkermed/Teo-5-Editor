@@ -18,6 +18,8 @@ int main (int argc, char* argv[])
     sizeFile.deleteFile();
     setenv ("TEO5_EDITOR_SIZE_FILE", sizeFile.getFullPathName().toRawUTF8(), 1);
     setenv ("TEO5_QUIET", "1", 1);
+    setenv ("TEO5_CUSTOM_SKINS_FILE", juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("teo5-snapshot-custom-skins.json")
+                                          .getFullPathName().toRawUTF8(), 1);
     setenv ("TEO5_SKIN_FILE", juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("teo5-snapshot-skin.txt")
                                   .getFullPathName().toRawUTF8(), 1); // never the user's skin choice // renders only: never send anything to a TEO-5 that happens to be connected
 
@@ -218,6 +220,8 @@ int main (int argc, char* argv[])
         // TEO5_SNAPSHOT_SELECT_SKIN: switch skins after the editor is open, as a click in the SKINS drawer does.
         if (auto k = juce::SystemStats::getEnvironmentVariable ("TEO5_SNAPSHOT_SELECT_SKIN", {}); k.isNotEmpty())
             teo5::Skin::select (k.getIntValue());
+        if (mode == "skinedit")
+            e->startNewSkin(); // the skin editor, starting from the skin in use
         if (mode == "skins")
             e->setSkinsOpen (true); // the SKINS drawer (TEO5_SKIN picks the skin in use)
         if (mode == "guide")

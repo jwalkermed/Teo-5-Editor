@@ -3,6 +3,7 @@
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <optional>
 
 namespace teo5
 {
@@ -16,14 +17,34 @@ namespace Skin
     // Where a colour is used: the panel's hardware (knobs, buttons, cheeks), the panel face, a drawer, or lettering.
     enum class Area { Panel, Face, Drawer, Text };
 
-    struct Info { const char* name; const char* description; };
-    int count();
+    struct Info { juce::String name, description; };
+    int count();          // built-in skins first, then the user's custom ones
+    int builtInCount();
+    bool isCustom (int index);
     Info info (int index);
     int current();
     // Switch skins: updates every SkinColour, the registered look-and-feels, and every open editor (they listen to
     // changes()); saves the choice unless temporary (thumbnails render each skin briefly and switch back).
     void select (int index, bool temporary = false);
     juce::ChangeBroadcaster& changes();
+    void reapply (bool notify); // after the current skin's colours changed
+    void rememberChoice();      // save the skin in use as the choice for every editor
+
+    // Custom skins: six colours chosen in the skin editor; everything else follows from them. Saved in
+    // ~/Library/TEO5Editor/custom-skins.json (TEO5_CUSTOM_SKINS_FILE for tools and tests).
+    struct Custom
+    {
+        juce::String name;
+        juce::Colour panel, lettering, pinstripes, leds, drawers;
+        bool lightDrawers = false;
+    };
+    Custom coloursOf (int index);                     // any skin's six colours (a new skin starts from these)
+    int addCustom (const Custom&, bool save = true);  // returns its index
+    void updateCustom (int index, const Custom&, bool save = true); // live while editing (save = false)
+    void removeCustom (int index);
+    bool exportCustom (int index, const juce::File&);
+    std::optional<Custom> readCustom (const juce::File&); // a skin file (import)
+    double contrast (juce::Colour, juce::Colour);     // WCAG contrast ratio, 1 to 21
 
     juce::Colour map (juce::uint32 argb, Area);
 

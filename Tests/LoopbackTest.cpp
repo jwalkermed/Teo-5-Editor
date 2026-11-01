@@ -638,6 +638,34 @@ static void testSkins (const juce::File& skinFile)
     check (skinFile.loadFileAsString().trim() == "1", "the choice is saved");
     Skin::select (0);
     check (juce::Colour (Palette::ledOn) == led && juce::Colour (Palette::silkscreen) == text, "back to the editor's own colours");
+
+    // Custom skins: made from six colours, changed live, saved, exported and imported, deleted.
+    const auto customFile = skinFile.getSiblingFile (skinFile.getFileNameWithoutExtension() + "-custom.json");
+    Skin::Custom c { "Test Skin", juce::Colour (0xff302a40), juce::Colour (0xfff0f0f0), juce::Colour (0xff40c0a0),
+                     juce::Colour (0xff20a0ff), juce::Colour (0xff141018), false };
+    const int ci = Skin::addCustom (c);
+    check (Skin::isCustom (ci) && Skin::count() == 11 && Skin::info (ci).name == "Test Skin", "a custom skin is added after the built-in ones");
+    Skin::select (ci);
+    check (juce::Colour (Palette::silkscreen) == c.lettering, "a custom skin's lettering is the colour chosen");
+    check (std::abs (juce::Colour (Palette::pinstripe).getHue() - c.pinstripes.getHue()) < 0.02f, "its pinstripes take the chosen hue");
+    c.lettering = juce::Colour (0xffffe080);
+    Skin::updateCustom (ci, c, false);
+    check (juce::Colour (Palette::silkscreen) == c.lettering, "a change shows straight away while editing");
+    check (customFile.existsAsFile() && ! customFile.loadFileAsString().contains ("FFE080"), "... and is saved only with Save");
+    Skin::updateCustom (ci, c, true);
+    check (customFile.loadFileAsString().containsIgnoreCase ("ffe080"), "Save writes it");
+    check (skinFile.loadFileAsString().startsWith ("custom:"), "the choice of a custom skin is saved by its identity");
+    const auto exported = skinFile.getSiblingFile ("teo5-loopback.teoskin");
+    check (Skin::exportCustom (ci, exported), "export a skin file");
+    auto read = Skin::readCustom (exported);
+    check (read && read->name == "Test Skin" && read->lettering == c.lettering && read->panel == c.panel, "import reads it back");
+    Skin::select (0);
+    Skin::removeCustom (ci);
+    check (Skin::count() == 10 && Skin::current() == 0, "delete removes it");
+    check (Skin::contrast (juce::Colours::white, juce::Colours::black) > 20.0 && Skin::contrast (c.panel, c.panel) < 1.01,
+           "contrast check (readability warning)");
+    exported.deleteFile();
+    customFile.deleteFile();
     skinFile.deleteFile();
 }
 
@@ -659,6 +687,7 @@ int main (int argc, char* argv[])
     // ... and the skin choice away from the user's.
     auto skinFile = juce::File::getSpecialLocation (juce::File::tempDirectory).getNonexistentChildFile ("teo5-loopback-skin", ".txt");
     setenv ("TEO5_SKIN_FILE", skinFile.getFullPathName().toRawUTF8(), 1);
+    setenv ("TEO5_CUSTOM_SKINS_FILE", skinFile.getSiblingFile (skinFile.getFileNameWithoutExtension() + "-custom.json").getFullPathName().toRawUTF8(), 1);
     unsetenv ("TEO5_SKIN");
     testSkins (skinFile);
 
