@@ -628,6 +628,16 @@ void partB()
 static void testSkins (const juce::File& skinFile)
 {
     using namespace teo5;
+    // A saved custom skin (and the choice of it) from an earlier session is loaded at startup.
+    const auto savedCustom = skinFile.getSiblingFile (skinFile.getFileNameWithoutExtension() + "-custom.json");
+    savedCustom.replaceWithText (R"([{"id":"earlier","name":"Earlier Skin","panel":"2f2a27","lettering":"efe3d4",)"
+                                 R"("pinstripes":"d07a3a","leds":"ffb347","drawers":"1e1916","lightDrawers":false}])");
+    skinFile.replaceWithText ("custom:earlier");
+    Skin::initialise();
+    check (Skin::count() == 11 && Skin::info (10).name == "Earlier Skin" && Skin::current() == 10,
+           "a saved custom skin, and the choice of it, come back at startup");
+    Skin::select (0);
+    Skin::removeCustom (10);
     check (Skin::current() == 0 && Skin::count() == 10, "skins: the editor's own colours by default, ten skins");
     const auto led = juce::Colour (Palette::ledOn), text = juce::Colour (Palette::silkscreen);
     check (led == juce::Colour (0xffff4a1c) && skinned (0xff181a1c) == juce::Colour (0xff181a1c), "skin 0 changes no colour");

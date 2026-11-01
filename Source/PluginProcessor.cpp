@@ -2,6 +2,7 @@
 // Copyright (C) 2026 The TEO-5 Editor project
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "UI/Skin.h"
 
 using namespace teo5;
 
@@ -9,6 +10,7 @@ TEO5Processor::TEO5Processor()
     : AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "TEO5", createLayout())
 {
+    teo5::Skin::initialise(); // the saved skin choice (and custom skins)
     midiSync = std::make_unique<MidiSync> (apvts, programState);
     transfer = std::make_unique<HardwareTransfer> (*midiSync, *library);
     seqPlayValue = apvts.getRawParameterValue ("seqPlay");

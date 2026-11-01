@@ -67,10 +67,14 @@ public:
 
     // The actions under a custom skin: Edit, Duplicate, Export, Delete.
     static constexpr const char* actions[] = { "Edit", "Duplicate", "Export", "Delete" };
+    // From the left edge, under the picture, each as wide as its word (all four fit in the narrowest drawer).
     juce::Rectangle<int> actionBounds (int index, int action) const
     {
-        const int y = rowBounds (index).getBottom() + 1;
-        return { thumbW + 16 + action * 62, y, 58, actionsH - 2 };
+        static const int widths[] = { 30, 64, 46, 46 };
+        int x = 6;
+        for (int a = 0; a < action; ++a)
+            x += widths[a] + 14;
+        return { x, rowBounds (index).getBottom() + 1, widths[action], actionsH - 2 };
     }
 
     void resized() override
@@ -547,14 +551,26 @@ void SkinsDrawer::cancelEdit()
     refreshThumbnails();
     resized();
     repaint();
+    showSkin (Skin::current());
+}
+
+void SkinsDrawer::showSkin (int index)
+{
+    if (isEditing() || ! juce::isPositiveAndBelow (index, Skin::count()))
+        return;
+    const auto r = list->rowBounds (index).withBottom (list->rowBounds (index).getBottom() + actionsH);
+    const int top = viewport.getViewPositionY(), h = viewport.getViewHeight();
+    if (r.getY() < top || r.getBottom() > top + h)
+        viewport.setViewPosition (0, juce::jmax (0, r.getBottom() - h + 8));
 }
 
 void SkinsDrawer::duplicate (int index)
 {
     auto c = Skin::coloursOf (index);
     c.name = c.name + " copy";
-    Skin::addCustom (c);
+    const int added = Skin::addCustom (c);
     refreshThumbnails();
+    showSkin (added);
 }
 
 void SkinsDrawer::confirmDelete (int index)
@@ -597,6 +613,7 @@ void SkinsDrawer::importSkin()
                               {
                                   Skin::select (Skin::addCustom (*c));
                                   safe->refreshThumbnails();
+                                  safe->showSkin (Skin::current());
                               }
                           });
 }

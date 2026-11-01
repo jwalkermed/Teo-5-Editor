@@ -19,7 +19,7 @@ int main (int argc, char* argv[])
     setenv ("TEO5_EDITOR_SIZE_FILE", sizeFile.getFullPathName().toRawUTF8(), 1);
     setenv ("TEO5_QUIET", "1", 1);
     setenv ("TEO5_CUSTOM_SKINS_FILE", juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("teo5-snapshot-custom-skins.json")
-                                          .getFullPathName().toRawUTF8(), 1);
+                                          .getFullPathName().toRawUTF8(), 0); // 0: a demo file can be passed in
     setenv ("TEO5_SKIN_FILE", juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("teo5-snapshot-skin.txt")
                                   .getFullPathName().toRawUTF8(), 1); // never the user's skin choice // renders only: never send anything to a TEO-5 that happens to be connected
 
@@ -223,7 +223,11 @@ int main (int argc, char* argv[])
         if (mode == "skinedit")
             e->startNewSkin(); // the skin editor, starting from the skin in use
         if (mode == "skins")
-            e->setSkinsOpen (true); // the SKINS drawer (TEO5_SKIN picks the skin in use)
+        {
+            e->setSkinsOpen (true);
+            if (argc > 4)
+                e->showSkinInList (juce::String (argv[4]).getIntValue()); // e.g. 10: the first of MY SKINS
+        } // the SKINS drawer (TEO5_SKIN picks the skin in use)
         if (mode == "guide")
             e->setGuideOpen (true);
         if (mode == "record")

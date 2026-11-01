@@ -125,7 +125,8 @@ void loadCustom()
     static bool loaded = false;
     if (std::exchange (loaded, true))
         return;
-    if (auto* arr = juce::JSON::parse (customFile()).getArray())
+    const auto json = juce::JSON::parse (customFile()); // kept: the array below lives inside it
+    if (auto* arr = json.getArray())
         for (auto& v : *arr)
             if (auto c = fromVar (v))
                 defs().push_back (defFor (*c, v.getProperty ("id", juce::Uuid().toString()).toString()));
@@ -166,17 +167,15 @@ juce::String savedFormOf (int index)
     return index >= builtInSkins ? "custom:" + defs()[(size_t) index].id : juce::String (index);
 }
 
+// The skin in use; -1 until Skin::initialise() (nothing is read from disk while the plug-in's code is loading, so
+// tools and tests can point the files elsewhere first). Until then the editor's own colours are used.
 int& currentIndex()
 {
-    static int index = []
-    {
-        auto v = juce::SystemStats::getEnvironmentVariable ("TEO5_SKIN", {});
-        if (v.isEmpty())
-            v = skinFile().loadFileAsString().trim();
-        return indexFor (v);
-    }();
+    static int index = -1;
     return index;
 }
+
+int inUse() { return juce::jmax (0, currentIndex()); }
 
 // What each colour shown on screen was designed as, per skin, so colours already set on components can be re-mapped.
 struct Origin { juce::uint32 argb; Skin::Area area; };
@@ -317,7 +316,7 @@ void Skin::updateCustom (int index, const Custom& c, bool save)
     defs()[(size_t) index] = defFor (c, defs()[(size_t) index].id);
     if (save)
         saveCustom();
-    if (index == currentIndex())
+    if (index == inUse())
         reapply (true); // the skin in use changed: re-colour everything
 }
 
@@ -325,7 +324,7 @@ void Skin::removeCustom (int index)
 {
     if (! isCustom (index))
         return;
-    const auto wasCurrent = currentIndex();
+    const auto wasCurrent = inUse();
     defs().erase (defs().begin() + index);
     saveCustom();
     // Indices after it moved down: forget their recorded colours (the registry is keyed by index).
@@ -346,12 +345,23 @@ std::optional<Skin::Custom> Skin::readCustom (const juce::File& file)
 {
     return fromVar (juce::JSON::parse (file));
 }
-int Skin::current() { return currentIndex(); }
+int Skin::current() { return inUse(); }
+
+void Skin::initialise()
+{
+    if (currentIndex() >= 0)
+        return;
+    auto v = juce::SystemStats::getEnvironmentVariable ("TEO5_SKIN", {});
+    if (v.isEmpty())
+        v = skinFile().loadFileAsString().trim();
+    currentIndex() = indexFor (v);
+    reapply (false);
+}
 juce::ChangeBroadcaster& Skin::changes() { return broadcaster(); }
 
 juce::Colour Skin::map (juce::uint32 argb, Area area)
 {
-    const int index = currentIndex();
+    const int index = inUse();
     const auto result = mapFor (defs()[(size_t) index], index, argb, area);
     origins().emplace (std::make_pair (index, result.getARGB() | 0xff000000u), Origin { argb | 0xff000000u, area });
     return result;
@@ -359,6 +369,7 @@ juce::Colour Skin::map (juce::uint32 argb, Area area)
 
 void Skin::select (int index, bool temporary)
 {
+    initialise();
     index = juce::jlimit (0, count() - 1, index);
     if (index == currentIndex())
         return;
@@ -371,13 +382,13 @@ void Skin::select (int index, bool temporary)
 void Skin::rememberChoice()
 {
     if (skinFile().getParentDirectory().createDirectory())
-        skinFile().replaceWithText (savedFormOf (currentIndex()));
+        skinFile().replaceWithText (savedFormOf (inUse()));
 }
 
 // The current skin (or its colours) changed: named colours, look-and-feels, then (notify) every open editor.
 void Skin::reapply (bool notify)
 {
-    const int index = currentIndex();
+    const int index = inUse();
     for (auto* c : skinColours())
         c->refresh();
     for (auto& e : lookAndFeels())
@@ -393,7 +404,7 @@ void Skin::reapply (bool notify)
 void Skin::registerLookAndFeel (juce::LookAndFeel_V4& lnf, std::function<void()> afterChange)
 {
     lookAndFeels().push_back ({ &lnf, afterChange });
-    lnf.setColourScheme (schemeFor (currentIndex()));
+    lnf.setColourScheme (schemeFor (inUse()));
     if (afterChange)
         afterChange();
 }
@@ -406,7 +417,7 @@ void Skin::unregisterLookAndFeel (juce::LookAndFeel_V4& lnf)
 
 void Skin::recolourComponents (juce::Component& root, int fromSkin)
 {
-    const int to = currentIndex();
+    const int to = inUse();
     std::function<void (juce::Component&)> walk = [&] (juce::Component& c)
     {
         auto& props = c.getProperties();

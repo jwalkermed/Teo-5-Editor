@@ -23,6 +23,8 @@ namespace Skin
     bool isCustom (int index);
     Info info (int index);
     int current();
+    // Reads the saved choice and custom skins (once; the processor calls it). Before that, the editor's own colours.
+    void initialise();
     // Switch skins: updates every SkinColour, the registered look-and-feels, and every open editor (they listen to
     // changes()); saves the choice unless temporary (thumbnails render each skin briefly and switch back).
     void select (int index, bool temporary = false);

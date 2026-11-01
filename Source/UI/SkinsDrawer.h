@@ -30,6 +30,7 @@ public:
     void startEdit (int index);
     bool isEditing() const;
     void cancelEdit();
+    void showSkin (int index); // scroll the list to a skin (after Save, Duplicate or Import)
 
 private:
     class List;
