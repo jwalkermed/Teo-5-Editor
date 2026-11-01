@@ -240,7 +240,10 @@ void MidiSync::applySettings (const MidiSettings& newSettings, bool fromUser)
     useCcForAudioThread = settings.useCc;
     SysEx::setIds ((juce::uint8) settings.sysexManufacturer, (juce::uint8) settings.sysexDevice);
     if (outChanged && ports.outputId().isNotEmpty())
-        deviceInquiry(); // identify the synth (and learn its SysEx IDs) as soon as the output is open
+    {
+        endPendingSysEx(); // a synth left mid-SysEx would ignore everything after it
+        deviceInquiry();   // identify the synth (and learn its SysEx IDs) as soon as the output is open
+    }
 
     if (settings.outputId.isNotEmpty() && ports.outputId().isEmpty())
         setStatus ("Could not open the selected MIDI output. Is another app holding it?");
@@ -1056,9 +1059,23 @@ void MidiSync::releaseNotes (const juce::Array<int>& notes)
 }
 
 // PANIC on the panel: everything off, against hung notes. Leaves the sequencer, arpeggiator and program alone.
+void MidiSync::endPendingSysEx()
+{
+    ports.queueOrdered (juce::MidiMessage (0xf7));
+}
+
+void MidiSync::startTalking()
+{
+    if (talking.exchange (true))
+        return;
+    ports.release();
+    fetchSynthUnlessRestored();
+}
+
 void MidiSync::panic()
 {
     const int ch = settings.channel;
+    endPendingSysEx();
     ports.queueOrdered (juce::MidiMessage::allSoundOff (ch));
     ports.queueOrdered (juce::MidiMessage::allNotesOff (ch));
     ports.queueOrdered (juce::MidiMessage::controllerEvent (ch, 121, 0)); // Reset All Controllers (wheels, pedals)

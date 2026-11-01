@@ -14,7 +14,9 @@ public:
     TEO5Processor();
     ~TEO5Processor() override;
 
-    void prepareToPlay (double, int) override {}
+    void prepareToPlay (double, int) override { startTalking(); }
+    // Lets the plug-in talk to the synth (see the constructor); called when the host runs it or opens the editor.
+    void startTalking();
     void releaseResources() override {}
     bool isBusesLayoutSupported (const BusesLayout&) const override { return true; }
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
@@ -63,7 +65,8 @@ private:
     juce::AudioProcessorValueTreeState apvts;
     teo5::ProgramState programState;
     std::unique_ptr<teo5::MidiSync> midiSync;
-    juce::SharedResourcePointer<teo5::LibraryModel> library; // one library shared by all instances in the process
+    juce::SharedResourcePointer<teo5::LibraryModel> library;
+    bool quiet = false; // TEO5_QUIET: never talk to the synth // one library shared by all instances in the process
     std::unique_ptr<teo5::HardwareTransfer> transfer;
     std::atomic<float>* seqPlayValue = nullptr;
     bool wasPlaying = false, wasSeqPlay = false; // audio thread

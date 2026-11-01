@@ -53,6 +53,14 @@ public:
 
     int pendingCount() const;
 
+    // Outgoing messages wait (queued) until release(): a plug-in copy the host only scans or tests never talks to
+    // the synth. Ports start held.
+    void release() { held = false; wake.signal(); }
+    bool isHeld() const { return held.load(); }
+    // Also write every logged message to this file (time, process id); appended, the old one kept as .old once it
+    // passes 1 MB. Empty = no file.
+    void setLogFile (const juce::File&);
+
     // ---- Diagnostics (MIDI monitor) ----
     int sentCount() const { return numSent.load(); }
     int receivedCount() const { return numReceived.load(); }
@@ -87,6 +95,9 @@ private:
     std::array<juce::uint32, 2048> realtimeData {};
 
     void log (const juce::String& line);
+    std::atomic<bool> held { true };
+    juce::File logFile;
+    std::unique_ptr<juce::FileOutputStream> logStream; // with logLock
     std::atomic<int> numSent { 0 }, numReceived { 0 };
     std::array<std::atomic<juce::uint32>, 128> lastSynthNoteOn {};
     mutable juce::CriticalSection logLock;

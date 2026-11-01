@@ -69,6 +69,13 @@ public:
     // A new plug-in instance: if no saved state is restored within a moment (a new track rather than a saved
     // project), select User 1, program 01 on the TEO-5 (program change, then the program is read into the panel).
     void fetchSynthUnlessRestored();
+    // Lets messages out to the synth (they're held until then) and starts the new-instance behaviour above. Called
+    // when the host runs the plug-in or opens its editor; a copy the host only scans never calls it. Once only.
+    void startTalking();
+    bool isTalking() const { return talking.load(); }
+    // A lone End of Exclusive: ends any SysEx the synth may still be waiting to finish ("Receiving SysEx"), after
+    // which it would ignore everything else. Harmless otherwise.
+    void endPendingSysEx();
     // The TEO-5 follows external MIDI clock (Global Clock Mode In, In Thru or In No S/S), as last read from it.
     bool clockIsExternal() const;
     // Global Clock Mode as last read (0 Off, 1 Out, 2 Out No S/S, 3 In, 4 In Thru, 5 In No S/S), or -1 if not read yet.
@@ -215,6 +222,7 @@ private:
     // Seq Play messages the editor sends for the DAW's transport may come back from the synth; ignore them until then.
     std::atomic<juce::uint32> ignoreSeqPlayUntil { 0 };
     std::atomic<bool> stateRestored { false };
+    std::atomic<bool> talking { false };
     std::atomic<bool> programActivity { false }; // anything sent or received for the program since startup
     bool synthRecording = false; // seqRecord as last seen by followSynthRecording
     void pushSeqPlay (int value); // audio thread

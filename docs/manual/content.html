@@ -171,7 +171,8 @@ choice.</p>
   seconds starts a new count.</li>
   <li><b>LIBRARY</b>: opens the Library drawer (lit while open).</li>
   <li><b>PANIC</b>: stops hung notes. Sends All Sound Off, All Notes Off, Reset All Controllers and a note-off for
-  every note. The program, sequencer and arpeggiator are left alone.</li>
+  every note. It also ends any SysEx message the synth is still waiting to finish. The program, sequencer and
+  arpeggiator are left alone.</li>
   <li><b>INIT</b>: loads the TEO-5's Basic Program into the edit buffer, a clean starting point for a new sound.
   Nothing is written to memory.</li>
 </ul>
@@ -462,6 +463,11 @@ for the TEO-5's output in your DAW (chapter 3). The sequencer drawer warns in am
 Live's transport would start it.</p>
 <h2>Stuck notes</h2>
 <p>Press <b>PANIC</b>.</p>
+<h2>The TEO-5 shows "Receiving SysEx" and ignores the editor</h2>
+<p>The synth is waiting for the end of a SysEx message and ignores everything else until it comes. Press
+<b>PANIC</b>: it sends the end. The editor also sends it every time it connects to the synth. If it keeps happening,
+the file <i>~/Library/TEO5Editor/midi-log.txt</i> records every message the editor sent and received, with the
+time.</p>
 <h2>The plug-in doesn't show up in the DAW</h2>
 <ul>
   <li>Run <i>install.command</i> again. If it ends with <i>"OK: the VST3 loads"</i>, the plug-in is fine and the DAW

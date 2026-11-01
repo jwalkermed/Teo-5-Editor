@@ -12,7 +12,21 @@ TEO5Processor::TEO5Processor()
     midiSync = std::make_unique<MidiSync> (apvts, programState);
     transfer = std::make_unique<HardwareTransfer> (*midiSync, *library);
     seqPlayValue = apvts.getRawParameterValue ("seqPlay");
-    midiSync->fetchSynthUnlessRestored(); // a new instance starts on User 1, program 01
+    // A plug-in talks to the synth only once the host runs it (prepareToPlay) or opens its editor: DAWs load hidden
+    // copies to scan or test plug-ins, and those must not send the synth anything. The app (and tools) start at once.
+    // TEO5_QUIET (the load test, screenshots) keeps a copy quiet altogether.
+    quiet = juce::SystemStats::getEnvironmentVariable ("TEO5_QUIET", {}).isNotEmpty();
+    if (! quiet && wrapperType != wrapperType_Undefined) // the plug-in and the app; not the test tools
+        midiSync->getPorts().setLogFile (juce::File::getSpecialLocation (juce::File::userHomeDirectory)
+                                             .getChildFile ("Library/TEO5Editor/midi-log.txt"));
+    if (! quiet && (wrapperType == wrapperType_Standalone || wrapperType == wrapperType_Undefined))
+        midiSync->startTalking(); // a new instance starts on User 1, program 01
+}
+
+void TEO5Processor::startTalking()
+{
+    if (! quiet)
+        midiSync->startTalking();
 }
 
 TEO5Processor::~TEO5Processor()

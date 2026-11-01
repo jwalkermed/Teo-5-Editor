@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
 #include "MidiPortManager.h"
+#include <unistd.h>
 
 namespace teo5
 {
@@ -169,12 +170,37 @@ juce::String MidiPortManager::lastError() const
     return error;
 }
 
+void MidiPortManager::setLogFile (const juce::File& f)
+{
+    const juce::ScopedLock sl (logLock);
+    logStream.reset();
+    logFile = f;
+    if (logFile == juce::File())
+        return;
+    if (logFile.getSize() > 1024 * 1024)
+        logFile.moveFileTo (logFile.withFileExtension ("old.txt"));
+    if (logFile.getParentDirectory().createDirectory())
+    {
+        logStream = std::make_unique<juce::FileOutputStream> (logFile);
+        if (! logStream->openedOk())
+            logStream.reset();
+    }
+}
+
 void MidiPortManager::log (const juce::String& line)
 {
     const juce::ScopedLock sl (logLock);
-    logLines.add (juce::Time::getCurrentTime().formatted ("%H:%M:%S ") + line);
+    const auto now = juce::Time::getCurrentTime();
+    logLines.add (now.formatted ("%H:%M:%S ") + line);
     if (logLines.size() > 40)
         logLines.removeRange (0, logLines.size() - 40);
+    if (logStream != nullptr)
+    {
+        // Date, time with milliseconds, process id: the DAW's plug-in scanner shows up as a different process.
+        *logStream << now.formatted ("%Y-%m-%d %H:%M:%S.") << juce::String (now.getMilliseconds()).paddedLeft ('0', 3)
+                   << " [" << (int) getpid() << "] " << line << "\n";
+        logStream->flush();
+    }
 }
 
 bool MidiPortManager::pushRealtime (const juce::MidiMessage& m)
@@ -217,6 +243,11 @@ void MidiPortManager::run()
     while (! threadShouldExit())
     {
         bool sentParameter = false;
+        if (held)
+        {
+            wake.wait (20);
+            continue;
+        }
         {
             const juce::ScopedLock sl (outLock);
             drainRealtime(); // played notes first, never delayed by parameter traffic

@@ -17,6 +17,7 @@ int main (int argc, char* argv[])
     auto sizeFile = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("teo5-snapshot-width.txt");
     sizeFile.deleteFile();
     setenv ("TEO5_EDITOR_SIZE_FILE", sizeFile.getFullPathName().toRawUTF8(), 1);
+    setenv ("TEO5_QUIET", "1", 1); // renders only: never send anything to a TEO-5 that happens to be connected
 
     const juce::File out = argc > 1 ? juce::File::getCurrentWorkingDirectory().getChildFile (argv[1])
                                     : juce::File::getCurrentWorkingDirectory().getChildFile ("panel.png");

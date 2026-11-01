@@ -30,6 +30,7 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
       globalDrawer (teo5::SettingsDrawer::Kind::Global, p.getMidiSync(), p.getProgramState(), p.getAPVTS()),
       programDrawer (teo5::SettingsDrawer::Kind::Program, p.getMidiSync(), p.getProgramState(), p.getAPVTS())
 {
+    p.startTalking(); // an editor means a real instance, even if the host hasn't run it yet
     addAndMakeVisible (panel);
     addAndMakeVisible (guideButton); // behind the drawers, which cover it
     addChildComponent (drawer);

@@ -4,8 +4,11 @@
 // Usage: TEO5PluginCheck [path/to/TEO-5 Editor.vst3]
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <cstdlib>
+
 int main (int argc, char** argv)
 {
+    setenv ("TEO5_QUIET", "1", 1); // a load test: the plug-in must not send anything to a connected TEO-5
     juce::ScopedJuceInitialiser_GUI init;
     const juce::String path = argc > 1 ? juce::String (argv[1]) : "/Library/Audio/Plug-Ins/VST3/TEO-5 Editor.vst3";
     std::printf ("Checking %s\n", path.toRawUTF8());

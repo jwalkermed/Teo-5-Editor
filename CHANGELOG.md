@@ -3,6 +3,20 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.0.16 (2026-10-31)
+
+**Fixed**
+- The TEO-5 could be left showing "Receiving SysEx" after Live started, ignoring the editor's knobs and program
+  changes. The editor now sends an End of SysEx byte whenever it opens the synth's MIDI port (and with PANIC), which
+  releases a synth stuck that way.
+- Copies of the plug-in that Live only loads to scan it (after an install, for example) no longer send anything to
+  the synth. The editor starts talking to the TEO-5 only once Live runs it or you open its window. The installer's
+  load test and the screenshot tool never talk to it.
+
+**Added**
+- A MIDI log: every message the editor sends and receives is also written to ~/Library/TEO5Editor/midi-log.txt
+  (with the time and which process sent it), so a problem like the one above can be traced.
+
 ## 1.0.15 (2026-10-31)
 
 **Fixed** (from a code review)
