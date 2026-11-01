@@ -3,6 +3,12 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.0.17 (2026-10-31)
+
+**Changed**
+- The envelope section's blue lines now run under the ENV 1 / ENV 2 lights, labels and routing button, as on the
+  TEO-5's own panel.
+
 ## 1.0.16 (2026-10-31)
 
 **Fixed**

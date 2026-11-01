@@ -749,7 +749,7 @@ void PanelComponent::paintPinstripes (juce::Graphics& g)
     block (643, 733, lowY, 12);
     block (742, 1135, lowY, 12);
     stripe (1145, 1852, lowY, 1.5f);
-    block (1290, 1852, lowY, 12, 1);
+    block (1145, 1852, lowY, 12, 1); // under ENV 1 / ENV 2 too, as on the synth
 
     // Bottom strip.
     for (int k = 1; k <= 3; ++k)
