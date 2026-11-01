@@ -3,6 +3,16 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.0.15 (2026-10-31)
+
+**Fixed** (from a code review)
+- While WRITE's Save pop-up is open, the library's toolbar (Undo, Redo, New Bank, Import, Fetch, the send buttons) is
+  greyed out, so the library can't change under the slot you chose. If the chosen slot's bank goes away anyway, the
+  choice is dropped and Confirm does nothing until you pick another slot. Before, this could save into the wrong bank
+  or crash the editor.
+- Saving into a TEO-5 User slot, Save all changes and the other sends now refuse when no MIDI output is selected, and
+  say so. Before, the programs went nowhere but the slots were marked as being on the synth (no NOT SENT).
+
 ## 1.0.14 (2026-10-31)
 
 **Changed**

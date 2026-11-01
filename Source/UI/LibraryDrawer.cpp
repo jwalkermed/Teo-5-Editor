@@ -819,6 +819,22 @@ void LibraryDrawer::changeListenerCallback (juce::ChangeBroadcaster*)
     selection = valid;
     if (model.program (loaded) == nullptr)
         loaded = {};
+    if (saving && saveTarget.isValid())
+    {
+        // Banks may have moved or gone (a transfer finishing, say): follow the target's bank by its uuid.
+        saveTarget.bank = -1;
+        for (int b = 0; b < (int) model.banks().size(); ++b)
+            if (model.banks()[(size_t) b].uuid == saveTargetBank)
+                saveTarget.bank = b;
+        if (! saveTargetValid())
+        {
+            saveTarget = {};
+            if (std::exchange (auditioned, false))
+                sync.restoreEditBuffer();
+            setStatus ("The chosen slot is gone: click a slot to save into");
+        }
+        savePanel->update();
+    }
     rebuildRows();
 }
 
@@ -862,8 +878,7 @@ void LibraryDrawer::rebuildRows()
             rowList.push_back ({ false, b, (int) bank.programs.size(), true }); // always room for one more
     }
 
-    undoButton.setEnabled (model.getUndoManager().canUndo());
-    redoButton.setEnabled (model.getUndoManager().canRedo());
+    updateToolbar();
     for (int pane = 0; pane < numPanes; ++pane)
         if (lists[(size_t) pane] != nullptr)
         {
@@ -1162,7 +1177,7 @@ void LibraryDrawer::timerCallback()
     {
         progressBar.setVisible (busy);
         cancelButton.setVisible (busy);
-        fetchButton.setEnabled (! busy);
+        updateToolbar();
         resized();
     }
     if (busy)
@@ -1455,6 +1470,8 @@ void LibraryDrawer::importSyx (int intoBank)
 
 bool LibraryDrawer::isInterestedInFileDrag (const juce::StringArray& files)
 {
+    if (saving)
+        return false;
     for (auto& f : files)
         if (f.endsWithIgnoreCase (".syx"))
             return true;
@@ -1715,6 +1732,14 @@ void LibraryDrawer::sendAllUserBanks()
 
 void LibraryDrawer::startWrites (std::vector<HardwareTransfer::Write> writes, juce::StringArray bankUuids)
 {
+    if (! sync.hasOutput())
+    {
+        // The writes would go nowhere, but the NOT SENT marks would clear as if they'd arrived.
+        setStatus ("No MIDI output: choose the TEO-5's port in the MIDI drawer, then send again");
+        if (onShowMessage)
+            onShowMessage ("No MIDI output");
+        return;
+    }
     sendingBankUuids = std::move (bankUuids);
     transfer.sendWrites (std::move (writes));
 }
@@ -1758,6 +1783,25 @@ juce::String LibraryDrawer::locationOf (ProgramRef ref) const
     return b.name + " " + juce::String (ref.index + 1).paddedLeft ('0', 2);
 }
 
+bool LibraryDrawer::saveTargetValid() const
+{
+    if (! saveTarget.isValid() || ! juce::isPositiveAndBelow (saveTarget.bank, (int) model.banks().size()) || model.isFactoryBank (saveTarget.bank))
+        return false;
+    const auto& b = model.banks()[(size_t) saveTarget.bank];
+    return b.kind == LibraryBank::Kind::Hardware ? saveTarget.index < LibraryModel::slotsPerBank
+                                                 : saveTarget.index <= (int) b.programs.size(); // size = the empty slot after them
+}
+
+void LibraryDrawer::updateToolbar()
+{
+    const bool free = ! saving; // while choosing where to save, the library can't change under the choice
+    for (auto* b : { &importButton, &saveAllButton, &newBankButton, &pullAllButton, &pushAllButton })
+        b->setEnabled (free);
+    fetchButton.setEnabled (free && ! transfer.isBusy());
+    undoButton.setEnabled (free && model.getUndoManager().canUndo());
+    redoButton.setEnabled (free && model.getUndoManager().canRedo());
+}
+
 bool LibraryDrawer::isSaveTarget (const Row& r) const
 {
     return saving && ! r.isBank && r.bank == saveTarget.bank && r.index == saveTarget.index;
@@ -1773,6 +1817,7 @@ void LibraryDrawer::beginSave (const juce::MemoryBlock& raw, const juce::String&
     saveFrom = from;
     saveTarget = {};
     selection.clear();
+    updateToolbar();
 
     // The panel's program is selected; if it isn't in a User bank or one of your banks, start at User 1, slot 01.
     ProgramRef show;
@@ -1817,6 +1862,7 @@ void LibraryDrawer::setSaveTarget (ProgramRef ref)
     if (isHardwareBank (ref.bank) && ref.index >= LibraryModel::slotsPerBank)
         return;
     saveTarget = ref;
+    saveTargetBank = model.banks()[(size_t) ref.bank].uuid;
     // Audition: the program stored there goes into the edit buffer (the panel doesn't change).
     if (auto* p = model.program (ref); p != nullptr && p->raw != nullptr)
     {
@@ -1832,10 +1878,18 @@ void LibraryDrawer::setSaveTarget (ProgramRef ref)
 
 void LibraryDrawer::confirmSave()
 {
-    if (! saving || ! saveTarget.isValid())
+    if (! saving || ! saveTargetValid())
         return;
     const auto& bank = model.banks()[(size_t) saveTarget.bank];
     const bool toSynth = bank.kind == LibraryBank::Kind::Hardware;
+    if (toSynth && ! sync.hasOutput())
+    {
+        // Nothing would reach the synth, yet the slot would count as stored there (no NOT SENT mark).
+        setStatus ("No MIDI output: choose the TEO-5's port in the MIDI drawer, or save into MY BANKS");
+        if (onShowMessage)
+            onShowMessage ("No MIDI output");
+        return;
+    }
     std::optional<HardwareTransfer::BankAddress> written;
     const int program = saveTarget.index + 1;
     if (toSynth)
@@ -1851,6 +1905,7 @@ void LibraryDrawer::confirmSave()
     saving = auditioned = false;
     saveTarget = {};
     savePanel->setVisible (false);
+    updateToolbar();
     selection.clear();
     if (ref.isValid())
         selection.insert ({ ref.bank, ref.index });
@@ -1869,6 +1924,7 @@ void LibraryDrawer::cancelSave()
     saving = false;
     saveTarget = {};
     savePanel->setVisible (false);
+    updateToolbar();
     selection.clear();
     setStatus ("Not saved");
     repaintLists();
@@ -1981,7 +2037,7 @@ void LibraryDrawer::closeWithUnsentCheck (std::function<void()> close)
         if (r == 1)
         {
             startWrites (std::move (writes), uuids);
-            if (onShowMessage)
+            if (onShowMessage && transfer.isBusy()) // not if there's no MIDI output (startWrites said so)
                 onShowMessage ("Sending " + juce::String (n) + " program" + (n == 1 ? "" : "s") + " to the TEO-5");
         }
         if (r != 0)

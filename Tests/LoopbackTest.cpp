@@ -581,6 +581,23 @@ void partB()
                    "drag MY BANKS -> TEO-5 slot 1 replaces it and marks it NOT SENT");
             lib.getUndoManager().undo();
             check (*lib.program ({ hwBank, 0 })->raw == replacedBefore, "undo restores the replaced slot");
+
+            // WRITE's slot picker: the chosen slot's bank going away (an undo, say) drops the choice, so Confirm
+            // can't save into a bank that no longer exists or into whichever bank took its place.
+            const int gone = lib.addBank ("Loopback Gone");
+            pump (50);
+            drawer.beginSave (*lib.program ({ hwBank, 1 })->raw, "Saved Here", "U2-02", {});
+            drawer.setSaveTarget ({ gone, 0 }); // the empty slot of an empty bank
+            check (drawer.isSaving() && drawer.getSaveTarget() == ProgramRef (gone, 0), "a slot in one of your banks is chosen");
+            const int banksBefore = (int) lib.banks().size();
+            lib.removeBank (gone);
+            pump (50);
+            check (! drawer.getSaveTarget().isValid(), "removing its bank drops the chosen slot");
+            drawer.confirmSave();
+            check (drawer.isSaving() && (int) lib.banks().size() == banksBefore - 1, "Confirm with no slot saves nothing");
+            drawer.cancelSave();
+            check (! drawer.isSaving(), "Cancel ends the save");
+            pump (300);
             lib.removeBank (mine);
         }
 

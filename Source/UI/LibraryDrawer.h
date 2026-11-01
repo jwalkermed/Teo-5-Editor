@@ -85,6 +85,9 @@ public:
     void confirmSave(); // writes (TEO-5 slot) or stores (your bank), loads it into the edit buffer, then onSaveFinished
     void cancelSave();  // puts your edit back in the edit buffer, then onSaveFinished
     bool isSaveTarget (const Row&) const;
+    // Choose where to save (what a click on a slot does while saving); the slot's program goes to the edit buffer.
+    void setSaveTarget (ProgramRef);
+    ProgramRef getSaveTarget() const { return saveTarget; }
     // The editor closes the drawer and updates the panel. saved = false: cancelled. `bank`/`program`: the TEO-5
     // location written, if the program went to a User bank.
     std::function<void (bool saved, std::optional<HardwareTransfer::BankAddress> bank, int program)> onSaveFinished;
@@ -113,8 +116,8 @@ private:
     void writeToLocation (ProgramRef);
     void saveAllChanges(); // Save all changes: writes every NOT SENT User-bank slot, after listing what it overwrites
     std::vector<HardwareTransfer::Write> unsentWrites (juce::StringArray& bankUuids, juce::StringArray& lines) const;
-    void setSaveTarget (ProgramRef);
     juce::String locationOf (ProgramRef) const;
+    void updateToolbar(); // while saving, only the slots and the pop-up respond
     void showHelp (bool);
     void sendBankToHardware (int bank);
     void renameProgram (ProgramRef);
@@ -169,6 +172,8 @@ private:
     juce::MemoryBlock saveRaw;
     juce::String saveName, saveFrom;
     ProgramRef saveTarget; // index may be the bank's size: the empty slot after one of your banks' programs
+    juce::String saveTargetBank; // its bank's uuid: the target follows the bank if banks move, and goes if it's deleted
+    bool saveTargetValid() const;
 
     struct HelpPanel : juce::Component
     {
