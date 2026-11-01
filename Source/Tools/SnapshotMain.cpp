@@ -17,7 +17,9 @@ int main (int argc, char* argv[])
     auto sizeFile = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("teo5-snapshot-width.txt");
     sizeFile.deleteFile();
     setenv ("TEO5_EDITOR_SIZE_FILE", sizeFile.getFullPathName().toRawUTF8(), 1);
-    setenv ("TEO5_QUIET", "1", 1); // renders only: never send anything to a TEO-5 that happens to be connected
+    setenv ("TEO5_QUIET", "1", 1);
+    setenv ("TEO5_SKIN_FILE", juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("teo5-snapshot-skin.txt")
+                                  .getFullPathName().toRawUTF8(), 1); // never the user's skin choice // renders only: never send anything to a TEO-5 that happens to be connected
 
     const juce::File out = argc > 1 ? juce::File::getCurrentWorkingDirectory().getChildFile (argv[1])
                                     : juce::File::getCurrentWorkingDirectory().getChildFile ("panel.png");
@@ -113,6 +115,9 @@ int main (int argc, char* argv[])
     }
     std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditor());
     editor->setVisible (true);
+    // TEO5_SNAPSHOT_WIDTH: render the editor at another width (e.g. the smallest, 1190), keeping its proportions.
+    if (auto w = juce::SystemStats::getEnvironmentVariable ("TEO5_SNAPSHOT_WIDTH", {}).getIntValue(); w > 0)
+        editor->setSize (w, juce::roundToInt (w * (double) editor->getHeight() / editor->getWidth()));
     if (mode == "library")
     {
         // Demo content for the screenshot.
@@ -210,6 +215,11 @@ int main (int argc, char* argv[])
             e->setGlobalOpen (true);
         if (mode == "program")
             e->setProgramOpen (true);
+        // TEO5_SNAPSHOT_SELECT_SKIN: switch skins after the editor is open, as a click in the SKINS drawer does.
+        if (auto k = juce::SystemStats::getEnvironmentVariable ("TEO5_SNAPSHOT_SELECT_SKIN", {}); k.isNotEmpty())
+            teo5::Skin::select (k.getIntValue());
+        if (mode == "skins")
+            e->setSkinsOpen (true); // the SKINS drawer (TEO5_SKIN picks the skin in use)
         if (mode == "guide")
             e->setGuideOpen (true);
         if (mode == "record")

@@ -11,8 +11,10 @@
 #include "UI/ModMatrixDrawer.h"
 #include "UI/SequencerDrawer.h"
 #include "UI/PanelGuide.h"
+#include "UI/SkinsDrawer.h"
 
-class TEO5Editor : public juce::AudioProcessorEditor
+class TEO5Editor : public juce::AudioProcessorEditor,
+                   private juce::ChangeListener
 {
 public:
     explicit TEO5Editor (TEO5Processor&);
@@ -32,6 +34,7 @@ public:
     void setDrawerOpen (bool);
     void setGlobalOpen (bool);
     void setProgramOpen (bool);
+    void setSkinsOpen (bool);
     void setLibraryOpen (bool);
     void setModMatrixOpen (bool);
     void showModulationMenu (const juce::String& paramId);
@@ -77,8 +80,11 @@ private:
     teo5::ModMatrixDrawer modMatrix;
     teo5::SequencerDrawer sequencer;
     teo5::SettingsDrawer globalDrawer, programDrawer;
+    teo5::SkinsDrawer skinsDrawer;
+    int shownSkin = 0; // the skin the editor's controls are coloured in (Skin::changes re-colours them)
+    void changeListenerCallback (juce::ChangeBroadcaster*) override;
     DrawerTab drawerTab { "MIDI" }, libraryTab { "LIBRARY" }, modMatrixTab { "MOD MATRIX" }, sequencerTab { "SEQUENCER" };
-    DrawerTab globalTab { "GLOBAL" }, programTab { "PROGRAM" };
+    DrawerTab globalTab { "GLOBAL" }, programTab { "PROGRAM" }, skinsTab { "SKINS" };
     void closeLeftDrawersExcept (juce::Component&);
     void closeRightDrawersExcept (juce::Component&);
     void setRightDrawerOpen (juce::Component&, DrawerTab&, bool);

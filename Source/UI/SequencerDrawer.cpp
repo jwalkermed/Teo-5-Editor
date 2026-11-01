@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
+#include "Skin.h"
 #include "SequencerDrawer.h"
 #include "TEO5LookAndFeel.h"
 
@@ -8,9 +9,9 @@ namespace teo5
 
 namespace
 {
-const juce::Colour bg (0xff181a1c), panel2 (0xff1e2024), panel3 (0xff26282d), edge (0xff34373e), edgeHi (0xff4a4f59),
-                   dim (0xff8d939c), recordColour (0xffffc23d), tieColour (0xff8fd18b), noteBlue (0xff5aa6ff), waitingAmber (0xffef9f27),
-                   hatchA (0xff202226), hatchB (0xff2c2e33);
+SkinColour bg { 0xff181a1c, Skin::Area::Drawer }, panel2 { 0xff1e2024, Skin::Area::Drawer }, panel3 { 0xff26282d, Skin::Area::Drawer }, edge { 0xff34373e, Skin::Area::Drawer }, edgeHi { 0xff4a4f59, Skin::Area::Drawer },
+                   dim { 0xff8d939c, Skin::Area::Drawer }, recordColour { 0xffffc23d, Skin::Area::Drawer }, tieColour { 0xff8fd18b, Skin::Area::Drawer }, noteBlue { 0xff5aa6ff, Skin::Area::Drawer }, waitingAmber { 0xffef9f27, Skin::Area::Drawer },
+                   hatchA { 0xff202226, Skin::Area::Drawer }, hatchB { 0xff2c2e33, Skin::Area::Drawer };
 
 juce::Font mono (float h, bool bold = false) { return juce::Font (juce::FontOptions ("Menlo", h, bold ? juce::Font::bold : juce::Font::plain)); }
 juce::Font panel (float h) { return TEO5LookAndFeel::panelFont (h); }
@@ -85,7 +86,7 @@ public:
                 g.fillEllipse (l.expanded (3.0f));
             }
             // Amber while PLAY waits for the DAW to start.
-            g.setColour (on ? (b.getProperties()["waiting"] ? waitingAmber : Palette::ledOn) : juce::Colour (0xff4a1a10));
+            g.setColour (on ? (b.getProperties()["waiting"] ? waitingAmber : Palette::ledOn) : skinned (0xff4a1a10, Skin::Area::Drawer));
             g.fillEllipse (l);
         }
     }
@@ -104,7 +105,7 @@ public:
                            juce::Slider::SliderStyle, juce::Slider&) override
     {
         auto track = juce::Rectangle<float> ((float) x, (float) y + (float) h * 0.5f - 2.0f, (float) w, 4.0f);
-        g.setColour (juce::Colour (0xff3a3d44));
+        g.setColour (skinned (0xff3a3d44, Skin::Area::Drawer));
         g.fillRoundedRectangle (track, 2.0f);
         g.setColour (noteBlue);
         g.fillRoundedRectangle (track.withRight (pos), 2.0f);
@@ -251,7 +252,7 @@ public:
 
                 // Length ruler.
                 auto num = juce::Rectangle<float> (cx, y, cw, geo.numH);
-                g.setColour (end ? Palette::pinstripe : in ? Palette::pinstripe.withAlpha (0.22f) : juce::Colour (0xff18191c));
+                g.setColour (end ? Palette::pinstripe : in ? Palette::pinstripe.withAlpha (0.22f) : skinned (0xff18191c, Skin::Area::Drawer));
                 g.fillRoundedRectangle (num, 2.0f);
                 g.setColour (end ? juce::Colours::white : in ? Palette::silkscreen : dim);
                 g.setFont (mono (cw < 26 ? 8.0f : 9.0f));
@@ -269,7 +270,7 @@ public:
                 {
                     g.setColour (tieColour);
                     g.fillRoundedRectangle (mode, 2.0f);
-                    label (g, mode, "TIE", juce::jmin (8.5f, cw * 0.25f), juce::Colour (0xff0e1a0d), juce::Justification::centred);
+                    label (g, mode, "TIE", juce::jmin (8.5f, cw * 0.25f), skinned (0xff0e1a0d, Skin::Area::Drawer), juce::Justification::centred);
                 }
 
                 for (int lane = 0; lane < Sequence::numLanes; ++lane)
@@ -365,7 +366,7 @@ private:
         else if (seq.isMuted (lane, step))
         {
             hatch (g, slot, hatchA, hatchB);
-            g.setColour (juce::Colour (0xff6d737c));
+            g.setColour (skinned (0xff6d737c, Skin::Area::Drawer));
             g.setFont (mono (fontH));
             g.drawText (noteName (seq.at (lane, step).note), slot, juce::Justification::centred);
         }
@@ -373,7 +374,7 @@ private:
         {
             g.setColour (panel2);
             g.fillRoundedRectangle (slot, 2.0f);
-            g.setColour (juce::Colour (0xff474c55));
+            g.setColour (skinned (0xff474c55, Skin::Area::Drawer));
             g.fillEllipse (slot.getCentreX() - 1.0f, slot.getCentreY() - 1.0f, 2.0f, 2.0f);
         }
     }
@@ -495,7 +496,7 @@ public:
             return;
         }
         const bool muted = seq.isMuted (lane, step);
-        g.setColour (muted ? juce::Colour (0xff6d737c) : Palette::silkscreen);
+        g.setColour (muted ? skinned (0xff6d737c, Skin::Area::Drawer) : Palette::silkscreen);
         g.setFont (mono (12.0f, true));
         g.drawText (noteName (seq.at (lane, step).note), r.removeFromLeft (38), juce::Justification::centredLeft);
         g.setColour (dim);
@@ -534,6 +535,7 @@ SequencerDrawer::SequencerDrawer (MidiSync& s, ProgramState& ps, juce::AudioProc
     : sync (s), programState (ps), apvts (state), hostPosition (std::move (host))
 {
     look = std::make_unique<Look>();
+    Skin::registerLookAndFeel (*look);
     setLookAndFeel (look.get());
     setOpaque (true);
 
@@ -612,7 +614,7 @@ SequencerDrawer::SequencerDrawer (MidiSync& s, ProgramState& ps, juce::AudioProc
     patchNext.onClick = [this] { if (onPatchStep) onPatchStep (1); };
     patchPrev.setTooltip ("Previous program in this bank");
     patchNext.setTooltip ("Next program in this bank");
-    bankBox.setColour (juce::ComboBox::backgroundColourId, juce::Colour (0xff141517));
+    bankBox.setColour (juce::ComboBox::backgroundColourId, skinned (0xff141517, Skin::Area::Drawer));
     bankBox.setColour (juce::ComboBox::outlineColourId, Palette::pinstripe.withAlpha (0.6f));
     bankBox.setColour (juce::ComboBox::textColourId, Palette::silkscreen);
     bankBox.setColour (juce::ComboBox::arrowColourId, Palette::pinstripe);
@@ -676,12 +678,12 @@ SequencerDrawer::SequencerDrawer (MidiSync& s, ProgramState& ps, juce::AudioProc
     keyboard.setOctaveForMiddleC (4); // 60 = C4, as in the lanes
     keyboard.setScrollButtonsVisible (false);
     keyboard.setVelocity (0.8f, true);
-    keyboard.setColour (juce::MidiKeyboardComponent::whiteNoteColourId, juce::Colour (0xfff2f2f0));
-    keyboard.setColour (juce::MidiKeyboardComponent::blackNoteColourId, juce::Colour (0xff141517));
-    keyboard.setColour (juce::MidiKeyboardComponent::keySeparatorLineColourId, juce::Colour (0xff222222));
+    keyboard.setColour (juce::MidiKeyboardComponent::whiteNoteColourId, skinned (0xfff2f2f0, Skin::Area::Drawer));
+    keyboard.setColour (juce::MidiKeyboardComponent::blackNoteColourId, skinned (0xff141517, Skin::Area::Drawer));
+    keyboard.setColour (juce::MidiKeyboardComponent::keySeparatorLineColourId, skinned (0xff222222, Skin::Area::Drawer));
     keyboard.setColour (juce::MidiKeyboardComponent::mouseOverKeyOverlayColourId, Palette::ledOn.withAlpha (0.18f));
     keyboard.setColour (juce::MidiKeyboardComponent::keyDownOverlayColourId, Palette::ledOn.withAlpha (0.45f));
-    keyboard.setColour (juce::MidiKeyboardComponent::textLabelColourId, juce::Colour (0xff6b6b6b));
+    keyboard.setColour (juce::MidiKeyboardComponent::textLabelColourId, skinned (0xff6b6b6b, Skin::Area::Drawer));
     keyboard.setColour (juce::MidiKeyboardComponent::shadowColourId, juce::Colours::transparentBlack);
     keyboardState.addListener (this);
     addAndMakeVisible (keyboard);
@@ -695,6 +697,7 @@ SequencerDrawer::~SequencerDrawer()
     keyboardState.removeListener (this);
     noteRows.clear();
     setLookAndFeel (nullptr);
+    Skin::unregisterLookAndFeel (*look);
 }
 
 void SequencerDrawer::visibilityChanged()
@@ -954,7 +957,7 @@ SequencerDrawer::HelpPanel::HelpPanel()
     text.setReadOnly (true);
     text.setScrollbarsShown (true);
     text.setCaretVisible (false);
-    text.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0xff141517));
+    text.setColour (juce::TextEditor::backgroundColourId, skinned (0xff141517, Skin::Area::Drawer));
     text.setColour (juce::TextEditor::outlineColourId, Palette::pinstripe.withAlpha (0.5f));
     // Section headings (lines in capitals) in the panel's lettering, the rest as plain text.
     for (auto& line : juce::StringArray::fromLines (sequencerGuide))
@@ -972,7 +975,7 @@ SequencerDrawer::HelpPanel::HelpPanel()
 
 void SequencerDrawer::HelpPanel::paint (juce::Graphics& g)
 {
-    g.setColour (juce::Colour (0xff181a1c));
+    g.setColour (skinned (0xff181a1c, Skin::Area::Drawer));
     g.fillRoundedRectangle (getLocalBounds().toFloat(), 4.0f);
     g.setColour (Palette::pinstripe);
     g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 4.0f, 1.0f);
@@ -1677,23 +1680,23 @@ void SequencerDrawer::paint (juce::Graphics& g)
     g.drawText (juce::String (sequence().length), juce::Rectangle<float> (w - 314, 5, 32, 24), juce::Justification::centred);
 
     auto readout = juce::Rectangle<float> (w - 106, 5, 92, 24); // sized to its contents
-    g.setColour (juce::Colour (0xff0a0a0b));
+    g.setColour (skinned (0xff0a0a0b, Skin::Area::Drawer));
     g.fillRoundedRectangle (readout, 2.5f);
-    g.setColour (juce::Colour (0xff2a1410));
+    g.setColour (skinned (0xff2a1410, Skin::Area::Drawer));
     g.drawRoundedRectangle (readout, 2.5f, 1.0f);
-    label (g, readout.withWidth (32).translated (6, 0), "STEP", 8.5f, juce::Colour (0xffc0705a));
+    label (g, readout.withWidth (32).translated (6, 0), "STEP", 8.5f, skinned (0xffc0705a, Skin::Area::Drawer));
     const int shown = recording ? cursor : playhead >= 0 ? playhead : firstSelected();
     g.setColour (Palette::ledOn);
     g.setFont (mono (17.0f, true));
     g.drawText (juce::String (shown + 1), readout.withTrimmedLeft (38).withWidth (22), juce::Justification::centredRight);
-    label (g, readout.withTrimmedLeft (63), "/ " + juce::String (sequence().length), 8.5f, juce::Colour (0xffc0705a));
+    label (g, readout.withTrimmedLeft (63), "/ " + juce::String (sequence().length), 8.5f, skinned (0xffc0705a, Skin::Area::Drawer));
 
     g.setColour (Palette::pinstripe);
     g.fillRect (12.0f, 34.0f, w - 26.0f, 1.0f);
 
     // Status line.
     const bool synthRec = synthRecordStatus.isNotEmpty() || paramValue (apvts, "seqRecord");
-    g.setColour (recording || synthRec ? Palette::ledOn : playhead >= 0 ? juce::Colour (0xff38c172)
+    g.setColour (recording || synthRec ? Palette::ledOn : playhead >= 0 ? skinned (0xff38c172, Skin::Area::Drawer)
                  : waitingForHost || clockWarning ? waitingAmber : dim);
     g.fillEllipse (14, 42, 7, 7);
     g.setColour (Palette::silkscreen);

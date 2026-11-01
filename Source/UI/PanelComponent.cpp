@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
+#include "Skin.h"
 #include "PanelComponent.h"
 
 namespace teo5
@@ -62,7 +63,7 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     const float shapeLedY[] = { 521, 538, 555, 573, 590 };
     for (int i = 0; i < 5; ++i)
         lfoShapeLeds[i] = &addLed (447, shapeLedY[i]);
-    label ("S/H", 469, 590, 8.0f, left);
+    label ("S/H", 470, 590, 8.0f); // centred under the waveform icons above (x 470)
 
     {
         auto& dest = addButton (277, 643, false);
@@ -663,35 +664,35 @@ void PanelComponent::paintBackground (juce::Graphics& g)
     const float cheekW = 17.0f;
     const float faceTop = 5.0f, lipTop = Y (1013), lipBottom = Y (1031);
 
-    g.fillAll (Colour (0xff000000));
+    g.fillAll (skinned (0xff000000, Skin::Area::Panel));
 
     // Panel face.
     auto face = Rectangle<float> (cheekW, faceTop, w - cheekW * 2, lipTop - faceTop);
     {
-        ColourGradient fg (Colour (0xff2e2f33), 0, face.getY(), Colour (0xff26272a), 0, face.getBottom(), false);
+        ColourGradient fg (skinned (0xff2e2f33, Skin::Area::Face), 0, face.getY(), skinned (0xff26272a, Skin::Area::Face), 0, face.getBottom(), false);
         g.setGradientFill (fg);
         g.fillRect (face);
         g.setTiledImageFill (noiseTile, 0, 0, 1.0f);
         g.fillRect (face);
-        g.setColour (Colour (0x30ffffff));
+        g.setColour (skinned (0x30ffffff, Skin::Area::Panel));
         g.drawHorizontalLine ((int) face.getY(), face.getX(), face.getRight()); // top edge catchlight
     }
 
     // Front lip with embossed logos.
     auto lip = Rectangle<float> (cheekW, lipTop, w - cheekW * 2, lipBottom - lipTop);
     {
-        ColourGradient lg (Colour (0xff222326), 0, lip.getY(), Colour (0xff141517), 0, lip.getBottom(), false);
+        ColourGradient lg (skinned (0xff222326, Skin::Area::Face), 0, lip.getY(), skinned (0xff141517, Skin::Area::Face), 0, lip.getBottom(), false);
         g.setGradientFill (lg);
         g.fillRect (lip);
-        g.setColour (Colour (0x50000000));
+        g.setColour (skinned (0x50000000, Skin::Area::Panel));
         g.drawHorizontalLine ((int) lip.getY(), lip.getX(), lip.getRight());
 
         auto emboss = [&] (const String& text, Rectangle<float> r, Font f, Justification j)
         {
             g.setFont (f);
-            g.setColour (Colour (0x40000000));
+            g.setColour (skinned (0x40000000, Skin::Area::Panel));
             g.drawText (text, r.translated (0.8f, 0.8f), j);
-            g.setColour (Colour (0x1cffffff));
+            g.setColour (skinned (0x1cffffff, Skin::Area::Panel));
             g.drawText (text, r, j);
         };
         emboss ("TEO-5", { X (185), lip.getY() - 2.0f, 260, lip.getHeight() + 4 },
@@ -705,15 +706,15 @@ void PanelComponent::paintBackground (juce::Graphics& g)
     for (float x0 : { 0.0f, w - cheekW })
     {
         auto cheek = Rectangle<float> (x0, 0, cheekW, h);
-        ColourGradient cg (Colour (0xff1c1c1e), cheek.getX(), 0, Colour (0xff050506), cheek.getRight(), 0, false);
-        cg.addColour (0.35, Colour (0xff141416));
+        ColourGradient cg (skinned (0xff1c1c1e, Skin::Area::Panel), cheek.getX(), 0, skinned (0xff050506, Skin::Area::Panel), cheek.getRight(), 0, false);
+        cg.addColour (0.35, skinned (0xff141416, Skin::Area::Panel));
         g.setGradientFill (cg);
         g.fillRect (cheek);
-        g.setColour (Colour (0x40ffffff));
+        g.setColour (skinned (0x40ffffff, Skin::Area::Panel));
         g.drawHorizontalLine (0, cheek.getX(), cheek.getRight());
-        g.setColour (Colour (0x20ffffff));
+        g.setColour (skinned (0x20ffffff, Skin::Area::Panel));
         g.drawVerticalLine ((int) (x0 == 0 ? cheek.getRight() - 1 : cheek.getX()), 0, h);
-        g.setColour (Colour (0x60000000));
+        g.setColour (skinned (0x60000000, Skin::Area::Panel));
         g.drawVerticalLine ((int) (x0 == 0 ? cheek.getX() : cheek.getRight() - 1), 0, h);
     }
 }
@@ -861,11 +862,12 @@ void PanelComponent::paintGlyphs (juce::Graphics& g)
         g.strokePath (p, PathStrokeType (1.1f));
     };
 
-    // LFO shapes: triangle, saw, reverse saw, square (S/H is text).
+    // LFO shapes: triangle, saw, reverse saw, square (S/H is text), all centred on the triangle at x 470. The saw,
+    // reverse saw and square draw only 90% of the width, so they move right by half the difference.
     wave (0, 470, 521, 15, 6);
-    wave (1, 470, 538, 15, 6);
-    wave (3, 470, 555, 15, 6);
-    wave (2, 470, 573, 15, 6);
+    wave (1, 470.75f, 538, 15, 6);
+    wave (3, 470.75f, 555, 15, 6);
+    wave (2, 470.75f, 573, 15, 6);
 
     // Oscillator waveform legends.
     for (auto [x, t] : { std::pair<float, int> { 279, 0 }, { 322, 1 }, { 366, 2 }, { 522, 0 }, { 566, 1 }, { 609, 2 } })

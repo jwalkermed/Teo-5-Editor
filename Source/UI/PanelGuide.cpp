@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
+#include "Skin.h"
 #include "PanelGuide.h"
 #include "TEO5LookAndFeel.h"
 
@@ -8,8 +9,8 @@ namespace teo5
 
 namespace
 {
-const juce::Colour sheet (0xff141517), edge (0xff34373e), dim (0xff8d939c), amber (0xffffc23d), face (0xff26282d);
-const juce::Colour heading = Palette::pinstripe.brighter (0.4f);
+SkinColour sheet { 0xff141517, Skin::Area::Drawer }, edge { 0xff34373e, Skin::Area::Drawer }, dim { 0xff8d939c, Skin::Area::Drawer }, amber { 0xffffc23d, Skin::Area::Drawer }, face { 0xff26282d, Skin::Area::Drawer };
+juce::Colour heading() { return Palette::pinstripe.brighter (0.4f); } // follows the skin
 
 // Three columns separated by "===". "# " starts a heading ("#! " an amber one), "- " a bullet, "| a | b" a table
 // row, "[menu]" draws the sample right-click menu; other lines are paragraphs. **text** is bold.
@@ -53,7 +54,7 @@ Right-click any control the TEO-5 can modulate: CUTOFF, RESONANCE, STATE, VOLUME
 - **PANIC** stops hung notes. The program, sequencer and arpeggiator are left alone.
 - **INIT** loads the TEO-5's Basic Program into the edit buffer, a clean start for a new sound.
 # DRAWERS
-The tabs on the sides open drawers: **LIBRARY**, **MOD MATRIX** and **SEQUENCER** on the left; **GLOBAL**, **PROGRAM** and **MIDI** on the right. One drawer opens on each side at a time. The sequencer has its own ? guide.
+The tabs on the sides open drawers: **LIBRARY**, **MOD MATRIX** and **SEQUENCER** on the left; **GLOBAL**, **PROGRAM**, **MIDI** and **SKINS** (the editor's colours) on the right. One drawer opens on each side at a time. The sequencer has its own ? guide.
 # SHORTCUTS
 | Fine adjustment | Shift + drag or wheel
 | Back to stored value | Double-click a knob
@@ -138,7 +139,7 @@ public:
             switch (b.kind)
             {
                 case Block::Heading:
-                    g.setColour (b.amber ? amber : heading);
+                    g.setColour (b.amber ? amber : heading());
                     g.setFont (TEO5LookAndFeel::panelFont (11.5f));
                     g.drawText (b.text, b.area, juce::Justification::bottomLeft, true);
                     break;
@@ -156,7 +157,7 @@ public:
                     g.drawText (b.text, b.area.withWidth (b.area.getWidth() * 0.5f).withHeight (17.0f),
                                 juce::Justification::centredLeft, true);
                     b.layout.draw (g, b.area.withTrimmedLeft (b.area.getWidth() * 0.5f).withTrimmedTop (1.5f));
-                    g.setColour (juce::Colour (0xff23252a));
+                    g.setColour (skinned (0xff23252a, Skin::Area::Drawer));
                     g.fillRect (b.area.withTop (b.area.getBottom() - 1.0f));
                     break;
                 case Block::Menu:
@@ -179,7 +180,7 @@ private:
     // A drawing of the right-click menu on CUTOFF, as the editor shows it.
     static void paintMenu (juce::Graphics& g, juce::Rectangle<float> r)
     {
-        g.setColour (juce::Colour (0xff1b1d21));
+        g.setColour (skinned (0xff1b1d21, Skin::Area::Drawer));
         g.fillRoundedRectangle (r, 4.0f);
         g.setColour (edge);
         g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
@@ -219,7 +220,7 @@ PanelGuide::PanelGuide()
         vp->setViewedComponent (col, false);
         vp->setScrollBarsShown (true, false);
         vp->setScrollBarThickness (8);
-        vp->getVerticalScrollBar().setColour (juce::ScrollBar::thumbColourId, juce::Colour (0xff4a4f59));
+        vp->getVerticalScrollBar().setColour (juce::ScrollBar::thumbColourId, skinned (0xff4a4f59, Skin::Area::Drawer));
         addAndMakeVisible (vp);
     }
     close.onClick = [this] { if (onClose) onClose(); };
@@ -290,10 +291,10 @@ void PanelGuide::HelpButton::paintButton (juce::Graphics& g, bool highlighted, b
 {
     auto r = getLocalBounds().toFloat().reduced (0.5f);
     const bool on = getToggleState();
-    g.setGradientFill (juce::ColourGradient (on ? Palette::pinstripe : juce::Colour (0xff33363c), r.getCentreX() - 3, r.getY() + 4,
-                                             on ? Palette::pinstripe.darker (0.3f) : juce::Colour (0xff1d1f23), r.getCentreX(), r.getBottom(), true));
+    g.setGradientFill (juce::ColourGradient (on ? Palette::pinstripe : skinned (0xff33363c, Skin::Area::Drawer), r.getCentreX() - 3, r.getY() + 4,
+                                             on ? Palette::pinstripe.darker (0.3f) : skinned (0xff1d1f23, Skin::Area::Drawer), r.getCentreX(), r.getBottom(), true));
     g.fillEllipse (r);
-    g.setColour (on ? heading : juce::Colour (highlighted || down ? 0xff8a919c : 0xff5d636d));
+    g.setColour (on ? heading() : juce::Colour (highlighted || down ? 0xff8a919c : 0xff5d636d));
     g.drawEllipse (r, 1.0f);
     g.setColour (on ? juce::Colours::white : Palette::silkscreen);
     g.setFont (TEO5LookAndFeel::panelFont (r.getHeight() * 0.5f));

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
+#include "Skin.h"
 #include "Widgets.h"
 
 namespace teo5
@@ -100,9 +101,9 @@ void SevenSegment::paint (juce::Graphics& g)
 {
     using namespace juce;
     auto b = getLocalBounds().toFloat();
-    g.setColour (Colour (0xff120303));
+    g.setColour (skinned (0xff120303, Skin::Area::Panel));
     g.fillRoundedRectangle (b, 2.0f);
-    g.setColour (Colour (0xff000000));
+    g.setColour (skinned (0xff000000, Skin::Area::Panel));
     g.drawRoundedRectangle (b, 2.0f, 1.0f);
 
     // Segment masks for 0-9 and '-' / blank: bits a b c d e f g.
@@ -245,13 +246,13 @@ void OledDisplay::paint (juce::Graphics& g)
     auto b = getLocalBounds().toFloat();
 
     // Bezel + glass.
-    g.setColour (Colour (0xff050505));
+    g.setColour (skinned (0xff050505, Skin::Area::Panel));
     g.fillRect (b);
-    g.setColour (Colour (0xff3a3b3e));
+    g.setColour (skinned (0xff3a3b3e, Skin::Area::Panel));
     g.drawRect (b, 1.0f);
 
     auto screen = b.reduced (5.0f, 4.0f);
-    const auto white = Colour (0xfff0f4f8);
+    const auto white = skinned (0xfff0f4f8, Skin::Area::Panel);
     const float h = screen.getHeight();
 
     if (showingParam)
@@ -320,7 +321,7 @@ void OledDisplay::paint (juce::Graphics& g)
     const int fav = favourite ? favourite() : -1;
     shownFavourite = fav;
     starArea = screen.withWidth (h * 0.17f + 4.0f);
-    g.setColour (fav == 1 ? Colour (0xffffc040) : white.withAlpha (fav == 0 ? 0.6f : 0.25f));
+    g.setColour (fav == 1 ? skinned (0xffffc040, Skin::Area::Panel) : white.withAlpha (fav == 0 ? 0.6f : 0.25f));
     g.setFont (FontOptions (h * 0.17f));
     g.drawText (String::fromUTF8 (fav == 1 ? "\xe2\x98\x85" : "\xe2\x98\x86"), starArea, Justification::centredLeft);
 
@@ -329,7 +330,7 @@ void OledDisplay::paint (juce::Graphics& g)
     {
         // EDITED in red under the name; the name moves up to make room.
         auto line = nameArea.removeFromBottom (nameArea.getHeight() * 0.34f);
-        g.setColour (Colour (0xffff3b2f));
+        g.setColour (skinned (0xffff3b2f, Skin::Area::Panel));
         g.setFont (TEO5LookAndFeel::oledFont (h * 0.095f, true).withExtraKerningFactor (0.12f));
         g.drawText ("EDITED", line.translated (0.0f, -h * 0.02f), Justification::centred, false);
     }

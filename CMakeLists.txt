@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Universal binary")
 
-project(TEO5Editor VERSION 1.0.18 LANGUAGES C CXX)
+project(TEO5Editor VERSION 1.1.0 LANGUAGES C CXX)
 add_compile_definitions(TEO5_VERSION="${PROJECT_VERSION}")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -91,6 +91,8 @@ set(TEO5_CORE_SOURCES
     Source/UI/SequencerDrawer.cpp
     Source/UI/TEO5LookAndFeel.cpp
     Source/UI/Widgets.cpp
+    Source/UI/Skin.cpp
+    Source/UI/SkinsDrawer.cpp
     Source/UI/PanelComponent.cpp
     Source/UI/PanelGuide.cpp)
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
+#include "Skin.h"
 #include "SettingsDrawer.h"
 #include "TEO5LookAndFeel.h"
 
@@ -8,7 +9,7 @@ namespace teo5
 
 namespace
 {
-const juce::Colour fieldBg (0xff141517), dim (0xff8d939c);
+SkinColour fieldBg { 0xff141517, Skin::Area::Drawer }, dim { 0xff8d939c, Skin::Area::Drawer };
 constexpr int rowH = 24, headerH = 26;
 
 // Globals that can cut the editor off from the synth: changing them asks first.
@@ -319,7 +320,7 @@ void SettingsDrawer::timerCallback()
 
 void SettingsDrawer::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xf0181a1c));
+    g.fillAll (skinned (0xf0181a1c, Skin::Area::Drawer));
     g.setColour (Palette::pinstripe);
     g.fillRect (0, 0, 2, getHeight());
     g.fillRect (12, 34, getWidth() - 24, 1);

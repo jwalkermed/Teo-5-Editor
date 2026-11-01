@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
+#include "Skin.h"
 #include "LibraryDrawer.h"
 #include "TEO5LookAndFeel.h"
 #include "../Library/SyxIO.h"
@@ -16,7 +17,7 @@ const juce::String bankDragDescription = "teo5-bank";
 // Per-program icons after the favourite star: export .syx, rename, delete. Each is iconWidth wide.
 enum class RowIcon { None, Star, Export, Rename, Delete };
 constexpr int starWidth = 22, iconWidth = 20, iconsRight = starWidth + 3 * iconWidth;
-const juce::Colour saveAmber (0xffe8a33a); // the slot chosen to save into
+SkinColour saveAmber { 0xffe8a33a, Skin::Area::Drawer }; // the slot chosen to save into
 
 RowIcon iconAt (int x)
 {
@@ -113,7 +114,7 @@ public:
 
             if (row.isBank)
             {
-                g.setColour (juce::Colour (0xff101113));
+                g.setColour (skinned (0xff101113, Skin::Area::Drawer));
                 g.fillRect (r);
                 g.setColour (Palette::pinstripe);
                 g.fillRect (r.removeFromBottom (1));
@@ -154,7 +155,7 @@ public:
                 if (p == nullptr && ! row.isNew)
                     continue;
 
-                g.setColour (i % 2 ? juce::Colour (0xff1c1d20) : juce::Colour (0xff202124));
+                g.setColour (i % 2 ? skinned (0xff1c1d20, Skin::Area::Drawer) : skinned (0xff202124, Skin::Area::Drawer));
                 g.fillRect (r);
                 const bool target = owner.isSaveTarget (row);
                 const bool blocked = owner.isSaving() && model.isFactoryBank (row.bank); // can't save into a factory bank
@@ -200,7 +201,7 @@ public:
                 }
 
                 // Favourite star.
-                g.setColour (p->favorite ? juce::Colour (0xffffc040) : Palette::silkscreen.withAlpha (0.22f));
+                g.setColour (p->favorite ? skinned (0xffffc040, Skin::Area::Drawer) : Palette::silkscreen.withAlpha (0.22f));
                 g.setFont (juce::FontOptions (13.0f));
                 g.drawText (juce::String::fromUTF8 (p->favorite ? "\xe2\x98\x85" : "\xe2\x98\x86"),
                             r.withWidth (22), juce::Justification::centred);
@@ -255,7 +256,7 @@ public:
                 g.drawText (p->name, text, juce::Justification::centredLeft, true);
                 if (blocked)
                 {
-                    g.setColour (juce::Colour (0xff1c1d20).withAlpha (0.65f)); // dimmed: can't save here
+                    g.setColour (skinned (0xff1c1d20, Skin::Area::Drawer).withAlpha (0.65f)); // dimmed: can't save here
                     g.fillRect (r);
                 }
             }
@@ -493,11 +494,11 @@ public:
     {
         for (auto* b : { &cancel, &confirm })
         {
-            b->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff2f3237));
+            b->setColour (juce::TextButton::buttonColourId, skinned (0xff2f3237, Skin::Area::Drawer));
             b->setColour (juce::TextButton::textColourOffId, Palette::silkscreen);
             addAndMakeVisible (b);
         }
-        confirm.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff3a3020));
+        confirm.setColour (juce::TextButton::buttonColourId, skinned (0xff3a3020, Skin::Area::Drawer));
         cancel.onClick = [this] { owner.cancelSave(); };
         confirm.onClick = [this] { owner.confirmSave(); };
         setSize (440, 250);
@@ -512,9 +513,9 @@ public:
     void paint (juce::Graphics& g) override
     {
         auto b = getLocalBounds().toFloat();
-        g.setColour (juce::Colour (0xff26282d));
+        g.setColour (skinned (0xff26282d, Skin::Area::Drawer));
         g.fillRoundedRectangle (b, 8.0f);
-        g.setColour (juce::Colour (0xff555a62));
+        g.setColour (skinned (0xff555a62, Skin::Area::Drawer));
         g.drawRoundedRectangle (b.reduced (0.5f), 8.0f, 1.0f);
 
         auto r = getLocalBounds().reduced (18, 14);
@@ -548,9 +549,9 @@ public:
 
         // What's in the edit buffer now.
         auto box = r.removeFromTop (58);
-        g.setColour (juce::Colour (0xff1d1f23));
+        g.setColour (skinned (0xff1d1f23, Skin::Area::Drawer));
         g.fillRoundedRectangle (box.toFloat(), 5.0f);
-        g.setColour (juce::Colour (0xff3a3d43));
+        g.setColour (skinned (0xff3a3d43, Skin::Area::Drawer));
         g.drawRoundedRectangle (box.toFloat().reduced (0.5f), 5.0f, 1.0f);
         box.reduce (10, 6);
         {
@@ -579,7 +580,7 @@ public:
         if (chosen)
         {
             g.setFont (juce::FontOptions (12.5f));
-            g.setColour (toSynth ? juce::Colour (0xfff0c27a) : Palette::silkscreen.withAlpha (0.6f));
+            g.setColour (toSynth ? skinned (0xfff0c27a, Skin::Area::Drawer) : Palette::silkscreen.withAlpha (0.6f));
             g.drawFittedText (toSynth ? juce::String::fromUTF8 ("\xe2\x9a\xa0 Confirm writes \"") + owner.saveName + "\" into the TEO-5's memory at "
                                             + owner.locationOf (owner.saveTarget) + "."
                                       : "Saved in the library only (" + owner.model.banks()[(size_t) owner.saveTarget.bank].name
@@ -615,7 +616,7 @@ LibraryDrawer::LibraryDrawer (LibraryModel& m, HardwareTransfer& t, MidiSync& s,
 
     for (auto* b : { &fetchButton, &importButton, &saveAllButton, &newBankButton, &undoButton, &redoButton, &cancelButton })
     {
-        b->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff232427));
+        b->setColour (juce::TextButton::buttonColourId, skinned (0xff232427, Skin::Area::Drawer));
         b->setColour (juce::TextButton::textColourOffId, text);
         addAndMakeVisible (b);
     }
@@ -649,14 +650,14 @@ LibraryDrawer::LibraryDrawer (LibraryModel& m, HardwareTransfer& t, MidiSync& s,
     cancelButton.onClick = [this] { transfer.cancel(); };
 
     search.setTextToShowWhenEmpty ("Search names, tags (tag:pad)", text.withAlpha (0.4f));
-    search.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0xff141517));
+    search.setColour (juce::TextEditor::backgroundColourId, skinned (0xff141517, Skin::Area::Drawer));
     search.setColour (juce::TextEditor::textColourId, text);
     search.setColour (juce::TextEditor::outlineColourId, Palette::pinstripe.withAlpha (0.6f));
     search.onTextChange = [this] { rebuildRows(); };
     addAndMakeVisible (search);
 
     favouritesOnly.setColour (juce::ToggleButton::textColourId, text);
-    favouritesOnly.setColour (juce::ToggleButton::tickColourId, juce::Colour (0xffffc040));
+    favouritesOnly.setColour (juce::ToggleButton::tickColourId, skinned (0xffffc040, Skin::Area::Drawer));
     favouritesOnly.onClick = [this] { rebuildRows(); };
     addAndMakeVisible (favouritesOnly);
 
@@ -719,7 +720,7 @@ LibraryDrawer::~LibraryDrawer()
 
 void LibraryDrawer::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff181a1c));
+    g.fillAll (skinned (0xff181a1c, Skin::Area::Drawer));
     g.setColour (Palette::pinstripe);
     g.fillRect (getWidth() - 2, 0, 2, getHeight());
     g.fillRect (12, 34, getWidth() - 24, 1);
@@ -1005,7 +1006,7 @@ void LibraryDrawer::beginBankDrag (int pane, int row)
     juce::Image img (juce::Image::ARGB, 200, rowHeight, true);
     {
         juce::Graphics g (img);
-        g.setColour (juce::Colour (0xff101113).withAlpha (0.9f));
+        g.setColour (skinned (0xff101113, Skin::Area::Drawer).withAlpha (0.9f));
         g.fillRoundedRectangle (img.getBounds().toFloat(), 3.0f);
         g.setColour (Palette::pinstripe);
         g.drawRoundedRectangle (img.getBounds().toFloat().reduced (0.5f), 3.0f, 1.0f);
@@ -2090,7 +2091,7 @@ LibraryDrawer::HelpPanel::HelpPanel()
     text.setReadOnly (true);
     text.setScrollbarsShown (true);
     text.setCaretVisible (false);
-    text.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0xff141517));
+    text.setColour (juce::TextEditor::backgroundColourId, skinned (0xff141517, Skin::Area::Drawer));
     text.setColour (juce::TextEditor::outlineColourId, Palette::pinstripe.withAlpha (0.5f));
     // Section headings (lines in capitals) in the panel's lettering, the rest as plain text, as in the sequencer's guide.
     for (auto& line : juce::StringArray::fromLines (libraryGuide))
@@ -2107,7 +2108,7 @@ LibraryDrawer::HelpPanel::HelpPanel()
 
 void LibraryDrawer::HelpPanel::paint (juce::Graphics& g)
 {
-    g.setColour (juce::Colour (0xff181a1c));
+    g.setColour (skinned (0xff181a1c, Skin::Area::Drawer));
     g.fillRoundedRectangle (getLocalBounds().toFloat(), 4.0f);
     g.setColour (Palette::pinstripe);
     g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 4.0f, 1.0f);

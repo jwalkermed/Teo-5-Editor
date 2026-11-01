@@ -3,6 +3,20 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.1.0 (2026-11-01)
+
+**Added**
+- **Skins.** A **SKINS** tab on the right cheek opens a drawer with ten colour schemes, each shown as a small picture
+  of the front panel: **Current** (the TEO-5's own charcoal, blue and red), **Studio Silver** (light, blue LEDs),
+  **Midnight** (navy, cyan, amber LEDs), **Walnut** (brown, copper, orange LEDs), **Phosphor** (black and green),
+  **Arctic White** (white, red LEDs), **Oxblood** (burgundy and gold), **Deep Teal** (teal, ice-blue LEDs),
+  **Royal Purple** (violet, magenta LEDs) and **Graphite** (monochrome, white LEDs). One click switches the whole
+  editor, panel and drawers, straight away; the list scrolls when the window is small. The choice is saved for every
+  TEO-5 Editor on your Mac, in every project.
+
+**Changed**
+- The LFO waveform list is tidied: every waveform and the S/H label are centred under the top (triangle) waveform.
+
 ## 1.0.18 (2026-10-31)
 
 **Changed**

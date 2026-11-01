@@ -3,22 +3,24 @@
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include "Skin.h"
 
 namespace teo5
 {
 
+// The panel's named colours. They follow the skin (see Skin.h): read them when painting, not once.
 namespace Palette
 {
-    const juce::Colour panel        { 0xff2a2b2e };
-    const juce::Colour panelDark    { 0xff1d1e21 };
-    const juce::Colour pinstripe    { 0xff2f7fd0 };
-    const juce::Colour silkscreen   { 0xffe6e6e6 };
-    const juce::Colour cheek        { 0xff0b0b0c };
-    const juce::Colour ledOn        { 0xffff4a1c };
-    const juce::Colour ledOff       { 0xff3e0c08 };
-    const juce::Colour buttonRed    { 0xffff2a14 };
-    const juce::Colour segmentOn    { 0xffff2216 };
-    const juce::Colour segmentOff   { 0xff2c0907 };
+    inline SkinColour panel      { 0xff2a2b2e, Skin::Area::Face };
+    inline SkinColour panelDark  { 0xff1d1e21, Skin::Area::Face };
+    inline SkinColour pinstripe  { 0xff2f7fd0, Skin::Area::Panel };
+    inline SkinColour silkscreen { 0xffe6e6e6, Skin::Area::Text };
+    inline SkinColour cheek      { 0xff0b0b0c, Skin::Area::Panel };
+    inline SkinColour ledOn      { 0xffff4a1c, Skin::Area::Panel };
+    inline SkinColour ledOff     { 0xff3e0c08, Skin::Area::Panel };
+    inline SkinColour buttonRed  { 0xffff2a14, Skin::Area::Panel };
+    inline SkinColour segmentOn  { 0xffff2216, Skin::Area::Panel };
+    inline SkinColour segmentOff { 0xff2c0907, Skin::Area::Panel };
 }
 
 enum class KnobStyle
@@ -31,6 +33,7 @@ class TEO5LookAndFeel : public juce::LookAndFeel_V4
 {
 public:
     TEO5LookAndFeel();
+    ~TEO5LookAndFeel() override;
 
     static juce::Font panelFont (float height);
     static juce::Font oledFont (float height, bool bold = false);

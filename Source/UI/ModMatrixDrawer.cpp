@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
+#include "Skin.h"
 #include "ModMatrixDrawer.h"
 #include "TEO5LookAndFeel.h"
 #include "../Params/ParamTable.h"
@@ -9,21 +10,23 @@ namespace teo5
 
 namespace
 {
-    const juce::Colour rowA (0xff1c1d20), rowB (0xff202124), comboBg (0xff141517);
+    SkinColour rowA { 0xff1c1d20, Skin::Area::Drawer }, rowB { 0xff202124, Skin::Area::Drawer }, comboBg { 0xff141517, Skin::Area::Drawer };
     constexpr int amountCentre = 127; // the TEO-5 stores 0-254, 127 = none
 
     // Drop-downs in the panel's lettering instead of the default bold system font.
     struct DrawerLookAndFeel : juce::LookAndFeel_V4
     {
+        DrawerLookAndFeel() { Skin::registerLookAndFeel (*this); }
+        ~DrawerLookAndFeel() override { Skin::unregisterLookAndFeel (*this); }
         juce::Font getComboBoxFont (juce::ComboBox&) override { return TEO5LookAndFeel::panelFont (10.5f); }
         juce::Font getPopupMenuFont() override { return TEO5LookAndFeel::panelFont (11.0f); }
         // Undo / Redo: as the sequencer's buttons.
         void drawButtonBackground (juce::Graphics& g, juce::Button& b, const juce::Colour&, bool highlighted, bool down) override
         {
             auto r = b.getLocalBounds().toFloat().reduced (0.5f);
-            g.setColour (down ? juce::Colour (0xff26282d).brighter (0.08f) : juce::Colour (0xff26282d));
+            g.setColour (down ? skinned (0xff26282d, Skin::Area::Drawer).brighter (0.08f) : skinned (0xff26282d, Skin::Area::Drawer));
             g.fillRoundedRectangle (r, 2.5f);
-            g.setColour (highlighted && b.isEnabled() ? juce::Colour (0xff4a4f59) : juce::Colour (0xff34373e));
+            g.setColour (highlighted && b.isEnabled() ? skinned (0xff4a4f59, Skin::Area::Drawer) : skinned (0xff34373e, Skin::Area::Drawer));
             g.drawRoundedRectangle (r, 2.5f, 1.0f);
         }
         void drawButtonText (juce::Graphics& g, juce::TextButton& b, bool, bool) override
@@ -129,7 +132,7 @@ public:
             juce::PathStrokeType (1.0f).createDashedStroke (p, p, dashes, 2);
             g.setColour (Palette::ledOn.withAlpha (0.55f));
             g.fillPath (p);
-            g.setColour (juce::Colour (0xffef9f27));
+            g.setColour (skinned (0xffef9f27, Skin::Area::Drawer));
             g.setFont (TEO5LookAndFeel::panelFont (8.5f));
             g.drawText ("OFF", b.reduced (6.0f, 0.0f), *ghost < amountCentre ? juce::Justification::centredLeft
                                                                               : juce::Justification::centredRight, false);
@@ -686,14 +689,14 @@ void ModMatrixDrawer::paintOverChildren (juce::Graphics& g)
 {
     if (juce::isPositiveAndBelow (focusedSlot - 1, rows.size()))
     {
-        g.setColour (juce::Colour (0xfff2a33a)); // amber, as on the mockup
+        g.setColour (skinned (0xfff2a33a, Skin::Area::Drawer)); // amber, as on the mockup
         g.drawRoundedRectangle (rows[focusedSlot - 1]->getBounds().toFloat().expanded (1.0f, 0.0f), 3.0f, 1.5f);
     }
 }
 
 void ModMatrixDrawer::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff181a1c));
+    g.fillAll (skinned (0xff181a1c, Skin::Area::Drawer));
     g.setColour (Palette::pinstripe);
     g.fillRect (getWidth() - 2, 0, 2, getHeight());
     g.fillRect (12, 34, getWidth() - 24, 1);

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
+#include "Skin.h"
 #include "MidiSettingsDrawer.h"
 #include "TEO5LookAndFeel.h"
 
@@ -20,7 +21,7 @@ MidiSettingsDrawer::MidiSettingsDrawer (MidiSync& s, ProgramState& ps) : sync (s
 
     for (auto* b : { &inBox, &outBox, &chBox, &modeBox })
     {
-        b->setColour (juce::ComboBox::backgroundColourId, juce::Colour (0xff141517));
+        b->setColour (juce::ComboBox::backgroundColourId, skinned (0xff141517, Skin::Area::Drawer));
         b->setColour (juce::ComboBox::outlineColourId, Palette::pinstripe.withAlpha (0.6f));
         b->setColour (juce::ComboBox::textColourId, text);
         b->setColour (juce::ComboBox::arrowColourId, Palette::pinstripe);
@@ -49,7 +50,7 @@ MidiSettingsDrawer::MidiSettingsDrawer (MidiSync& s, ProgramState& ps) : sync (s
 
     for (auto* b : { &refreshButton, &inquiryButton, &setupButton, &receiveButton, &sendButton, &sendAllButton, &testNoteButton, &clearMonitorButton })
     {
-        b->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff232427));
+        b->setColour (juce::TextButton::buttonColourId, skinned (0xff232427, Skin::Area::Drawer));
         b->setColour (juce::TextButton::textColourOffId, text);
         addAndMakeVisible (b);
     }
@@ -82,7 +83,7 @@ MidiSettingsDrawer::MidiSettingsDrawer (MidiSync& s, ProgramState& ps) : sync (s
     monitor.setReadOnly (true);
     monitor.setCaretVisible (false);
     monitor.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 10.0f, juce::Font::plain));
-    monitor.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0xff0b0c0d));
+    monitor.setColour (juce::TextEditor::backgroundColourId, skinned (0xff0b0c0d, Skin::Area::Drawer));
     monitor.setColour (juce::TextEditor::textColourId, text.withAlpha (0.8f));
     monitor.setColour (juce::TextEditor::outlineColourId, Palette::pinstripe.withAlpha (0.4f));
     addAndMakeVisible (monitor);
@@ -185,7 +186,7 @@ void MidiSettingsDrawer::timerCallback()
 
 void MidiSettingsDrawer::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xf0181a1c));
+    g.fillAll (skinned (0xf0181a1c, Skin::Area::Drawer));
     g.setColour (Palette::pinstripe);
     g.fillRect (0, 0, 2, getHeight());
     g.fillRect (12, 34, getWidth() - 24, 1);

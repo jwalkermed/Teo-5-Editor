@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 The TEO-5 Editor project
+#include "UI/Skin.h"
 #include "PluginEditor.h"
 #include <map>
 
@@ -39,12 +40,14 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
     addChildComponent (sequencer);
     addChildComponent (globalDrawer);
     addChildComponent (programDrawer);
+    addChildComponent (skinsDrawer);
     addAndMakeVisible (drawerTab);
     addAndMakeVisible (libraryTab);
     addAndMakeVisible (modMatrixTab);
     addAndMakeVisible (sequencerTab);
     addAndMakeVisible (globalTab);
     addAndMakeVisible (programTab);
+    addAndMakeVisible (skinsTab);
     addChildComponent (guide);
     addChildComponent (library.getSavePanel()); // over the panel, beside the library, while WRITE chooses a slot
     guideButton.setTooltip ("How the front panel works");
@@ -56,6 +59,26 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
     sequencerTab.setTooltip ("Sequencer");
     globalTab.setTooltip ("Global settings");
     programTab.setTooltip ("Program settings");
+    skinsTab.setTooltip ("Skins: the editor's colours");
+    skinsTab.onClick = [this] { setSkinsOpen (! skinsDrawer.isVisible()); };
+    // Skins: JUCE's default look (drop-downs, text fields, scroll bars in the drawers) follows the skin too.
+    if (auto* v4 = dynamic_cast<juce::LookAndFeel_V4*> (&juce::LookAndFeel::getDefaultLookAndFeel()))
+    {
+        static bool registered = false;
+        if (! std::exchange (registered, true))
+            teo5::Skin::registerLookAndFeel (*v4);
+    }
+    shownSkin = teo5::Skin::current();
+    teo5::Skin::changes().addChangeListener (this);
+    skinsDrawer.renderPanel = [this] (int index)
+    {
+        // The front panel drawn in another skin for a moment (no other control changes colour), then back.
+        const int was = teo5::Skin::current();
+        teo5::Skin::select (index, true);
+        auto image = panel.createComponentSnapshot (panel.getLocalBounds(), true, 0.25f);
+        teo5::Skin::select (was, true);
+        return image;
+    };
     globalTab.onClick = [this] { setGlobalOpen (! globalDrawer.isVisible()); };
     programTab.onClick = [this] { setProgramOpen (! programDrawer.isVisible()); };
     drawerTab.onClick = [this] { setDrawerOpen (! drawer.isVisible()); };
@@ -213,6 +236,7 @@ TEO5Editor::~TEO5Editor()
     processor.getMidiSync().onRemoteChange = nullptr;
     processor.getMidiSync().onProgramChanged = nullptr;
     processor.getMidiSync().onNameFieldFound = nullptr;
+    teo5::Skin::changes().removeChangeListener (this);
 }
 
 void TEO5Editor::handlePanelAction (const juce::String& action)
@@ -484,13 +508,23 @@ void TEO5Editor::setDrawerOpen (bool shouldBeOpen)
 
 void TEO5Editor::setGlobalOpen (bool shouldBeOpen) { setRightDrawerOpen (globalDrawer, globalTab, shouldBeOpen); }
 void TEO5Editor::setProgramOpen (bool shouldBeOpen) { setRightDrawerOpen (programDrawer, programTab, shouldBeOpen); }
+void TEO5Editor::setSkinsOpen (bool shouldBeOpen) { setRightDrawerOpen (skinsDrawer, skinsTab, shouldBeOpen); }
+
+// Another skin was chosen (here or in another editor): re-colour the controls and repaint everything.
+void TEO5Editor::changeListenerCallback (juce::ChangeBroadcaster*)
+{
+    teo5::Skin::recolourComponents (*this, std::exchange (shownSkin, teo5::Skin::current()));
+    for (auto* tab : { &drawerTab, &libraryTab, &modMatrixTab, &sequencerTab, &globalTab, &programTab, &skinsTab })
+        tab->repaint();
+    repaint();
+}
 
 // One right-hand drawer at a time.
 void TEO5Editor::closeRightDrawersExcept (juce::Component& keep)
 {
     setGuideOpen (false);
     for (auto [d, tab] : { std::pair<juce::Component*, DrawerTab*> { &drawer, &drawerTab }, { &globalDrawer, &globalTab },
-                           { &programDrawer, &programTab } })
+                           { &programDrawer, &programTab }, { &skinsDrawer, &skinsTab } })
         if (d != &keep && d->isVisible())
         {
             d->setVisible (false);
@@ -699,7 +733,7 @@ void TEO5Editor::setGuideOpen (bool shouldBeOpen)
 bool TEO5Editor::anyDrawerOpen() const
 {
     for (const juce::Component* d : std::initializer_list<const juce::Component*> { &drawer, &library, &modMatrix, &sequencer,
-                                                                                 &globalDrawer, &programDrawer })
+                                                                                 &globalDrawer, &programDrawer, &skinsDrawer })
         if (d->isVisible())
             return true;
     return false;
@@ -753,12 +787,13 @@ void TEO5Editor::resized()
     const int settingsW = juce::jmin (380, getWidth() / 3);
     globalDrawer.setBounds (getWidth() - cheek - settingsW, 0, settingsW, getHeight());
     programDrawer.setBounds (globalDrawer.getBounds());
+    skinsDrawer.setBounds (globalDrawer.getBounds());
 
-    // Three tabs down the right end cheek.
+    // Four tabs down the right end cheek.
     {
-        const int h[] = { 84, 96, 64 }, gap = 10;
-        int y = (getHeight() - (h[0] + h[1] + h[2] + 2 * gap)) / 2;
-        for (auto [tab, i] : { std::pair<DrawerTab*, int> { &globalTab, 0 }, { &programTab, 1 }, { &drawerTab, 2 } })
+        const int h[] = { 84, 96, 64, 70 }, gap = 10;
+        int y = (getHeight() - (h[0] + h[1] + h[2] + h[3] + 3 * gap)) / 2;
+        for (auto [tab, i] : { std::pair<DrawerTab*, int> { &globalTab, 0 }, { &programTab, 1 }, { &drawerTab, 2 }, { &skinsTab, 3 } })
         {
             tab->setBounds (getWidth() - cheek, y, cheek, h[i]);
             y += h[i] + gap;
@@ -794,12 +829,13 @@ void TEO5Editor::resized()
 void TEO5Editor::DrawerTab::paint (juce::Graphics& g)
 {
     auto b = getLocalBounds().toFloat().reduced (1.0f, 0.0f);
-    g.setColour (juce::Colour (open ? 0xff2f7fd0 : 0xff1a1b1d));
+    // Tabs sit on the dark cheeks in every skin: panel colours, light lettering.
+    g.setColour (teo5::skinned (open ? 0xff2f7fd0 : 0xff1a1b1d, teo5::Skin::Area::Panel));
     g.fillRoundedRectangle (b, 2.0f);
-    g.setColour (juce::Colour (0xff2f7fd0).withAlpha (open ? 1.0f : 0.5f));
+    g.setColour (teo5::skinned (0xff2f7fd0, teo5::Skin::Area::Panel).withAlpha (open ? 1.0f : 0.5f));
     g.drawRoundedRectangle (b, 2.0f, 1.0f);
 
-    g.setColour (juce::Colour (0xffe6e6e6));
+    g.setColour (teo5::skinned (0xffe6e6e6, teo5::Skin::Area::Panel));
     g.setFont (teo5::TEO5LookAndFeel::panelFont (juce::jmin (9.0f, b.getWidth() * 0.62f)));
     juce::Graphics::ScopedSaveState s (g);
     g.addTransform (juce::AffineTransform::rotation (-juce::MathConstants<float>::halfPi, b.getCentreX(), b.getCentreY()));

@@ -17,6 +17,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "PluginProcessor.h"
 #include "UI/LibraryDrawer.h"
+#include "UI/TEO5LookAndFeel.h"
 #include "UI/ModMatrixDrawer.h"
 #include "Params/ParamTable.h"
 #include "Midi/Nrpn.h"
@@ -623,6 +624,23 @@ void partB()
 }
 } // namespace
 
+// Skins: the editor's own colours by default; switching changes the named colours and is saved; back again restores them.
+static void testSkins (const juce::File& skinFile)
+{
+    using namespace teo5;
+    check (Skin::current() == 0 && Skin::count() == 10, "skins: the editor's own colours by default, ten skins");
+    const auto led = juce::Colour (Palette::ledOn), text = juce::Colour (Palette::silkscreen);
+    check (led == juce::Colour (0xffff4a1c) && skinned (0xff181a1c) == juce::Colour (0xff181a1c), "skin 0 changes no colour");
+    Skin::select (1);
+    check (juce::Colour (Palette::ledOn) != led && juce::Colour (Palette::silkscreen).getBrightness() < 0.3f,
+           "Studio Silver: blue LEDs, dark lettering");
+    check (skinned (0xff181a1c).getBrightness() > 0.7f, "Studio Silver: light drawers");
+    check (skinFile.loadFileAsString().trim() == "1", "the choice is saved");
+    Skin::select (0);
+    check (juce::Colour (Palette::ledOn) == led && juce::Colour (Palette::silkscreen) == text, "back to the editor's own colours");
+    skinFile.deleteFile();
+}
+
 int main (int argc, char* argv[])
 {
     juce::ScopedJuceInitialiser_GUI gui;
@@ -637,6 +655,12 @@ int main (int argc, char* argv[])
     // ... and the probed (fake) layout away from the user's layout file.
     auto layoutFile = juce::File::getSpecialLocation (juce::File::tempDirectory).getNonexistentChildFile ("teo5-loopback-layout", ".json");
     setenv ("TEO5_LAYOUT_FILE", layoutFile.getFullPathName().toRawUTF8(), 1);
+
+    // ... and the skin choice away from the user's.
+    auto skinFile = juce::File::getSpecialLocation (juce::File::tempDirectory).getNonexistentChildFile ("teo5-loopback-skin", ".txt");
+    setenv ("TEO5_SKIN_FILE", skinFile.getFullPathName().toRawUTF8(), 1);
+    unsetenv ("TEO5_SKIN");
+    testSkins (skinFile);
 
     partA();
     partB();
