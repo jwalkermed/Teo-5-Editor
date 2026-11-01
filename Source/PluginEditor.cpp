@@ -162,7 +162,7 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
 
     showSynthLocation(); // restore FACTORY + display from the saved state
     library.isFactoryPanel = [this] { return panel.isFactory(); };
-    library.onSaveFinished = [this] (bool saved, std::optional<teo5::HardwareTransfer::BankAddress> written, int program)
+    library.onSaveFinished = [this] (bool saved, std::optional<teo5::HardwareTransfer::BankAddress> written, int program, bool keepOpen)
     {
         auto& ps = processor.getProgramState();
         if (written)
@@ -173,7 +173,8 @@ TEO5Editor::TEO5Editor (TEO5Processor& p)
             ps.factory = false;
             browseLibraryBank = -1;
         }
-        setLibraryOpen (false);
+        if (! keepOpen)
+            setLibraryOpen (false); // WRITE on the panel; a save from the library's menu leaves it open
         showSynthLocation();
         if (saved)
             oledMessage ("WRITE", written ? "Stored in " + teo5::HardwareTransfer::locationName (*written, program) : ps.name + " saved");
@@ -525,10 +526,7 @@ void TEO5Editor::showSynthLocation()
 void TEO5Editor::setLibraryOpen (bool shouldBeOpen)
 {
     if (! shouldBeOpen && library.isSaving())
-    {
-        library.cancelSave(); // closing the drawer any other way cancels the save (and closes it)
-        return;
-    }
+        library.cancelSave(); // closing the drawer cancels a save in progress (your edit goes back)
     if (shouldBeOpen)
         closeLeftDrawersExcept (library);
     library.setVisible (shouldBeOpen);

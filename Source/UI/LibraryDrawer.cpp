@@ -1401,7 +1401,7 @@ void LibraryDrawer::writeToLocation (ProgramRef ref)
     auto* p = model.program (ref);
     if (p == nullptr || p->raw == nullptr || saving)
         return;
-    beginSave (*p->raw, p->name, locationOf (ref), ref);
+    beginSave (*p->raw, p->name, locationOf (ref), ref, true); // the library stays open afterwards
 }
 
 void LibraryDrawer::sendBankToHardware (int b)
@@ -1807,8 +1807,10 @@ bool LibraryDrawer::isSaveTarget (const Row& r) const
     return saving && ! r.isBank && r.bank == saveTarget.bank && r.index == saveTarget.index;
 }
 
-void LibraryDrawer::beginSave (const juce::MemoryBlock& raw, const juce::String& name, const juce::String& from, ProgramRef current)
+void LibraryDrawer::beginSave (const juce::MemoryBlock& raw, const juce::String& name, const juce::String& from, ProgramRef current,
+                               bool fromLibrary)
 {
+    saveFromLibrary = fromLibrary;
     showHelp (false);
     saving = true;
     auditioned = false;
@@ -1912,7 +1914,7 @@ void LibraryDrawer::confirmSave()
     setStatus (toSynth ? "Wrote \"" + saveName + "\" to " + where : "Saved \"" + saveName + "\" in " + bankName);
     repaintLists();
     if (onSaveFinished)
-        onSaveFinished (true, written, program);
+        onSaveFinished (true, written, program, saveFromLibrary);
 }
 
 void LibraryDrawer::cancelSave()
@@ -1929,7 +1931,7 @@ void LibraryDrawer::cancelSave()
     setStatus ("Not saved");
     repaintLists();
     if (onSaveFinished)
-        onSaveFinished (false, std::nullopt, 0);
+        onSaveFinished (false, std::nullopt, 0, saveFromLibrary);
 }
 
 // ---- Sending changes ------------------------------------------------------------------------------
@@ -2013,7 +2015,8 @@ void LibraryDrawer::closeWithUnsentCheck (std::function<void()> close)
 {
     if (saving)
     {
-        cancelSave(); // the editor closes the drawer
+        cancelSave();
+        close(); // LIBRARY closes the drawer even if the save started from the library's menu
         return;
     }
     juce::StringArray uuids, lines;

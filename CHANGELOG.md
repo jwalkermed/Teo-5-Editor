@@ -3,6 +3,12 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.0.18 (2026-10-31)
+
+**Changed**
+- A save started from the library's right-click menu (Write to TEO-5 memory) leaves the library open after Confirm or
+  Cancel, so you can carry on working there. WRITE on the front panel still closes it.
+
 ## 1.0.17 (2026-10-31)
 
 **Changed**

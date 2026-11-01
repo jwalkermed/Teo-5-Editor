@@ -80,7 +80,9 @@ public:
     // The library becomes a picker: clicking a slot in a TEO-5 User bank or in one of your banks chooses where `raw`
     // goes, and that slot's program goes into the edit buffer so it can be auditioned. `current` (the panel's program,
     // if the library has it) is selected; if it isn't in a User bank or one of your banks, User 1 slot 01 is chosen.
-    void beginSave (const juce::MemoryBlock& raw, const juce::String& name, const juce::String& from, ProgramRef current);
+    // fromLibrary: started from the library's own menu (Write to TEO-5 memory), so the drawer stays open afterwards.
+    void beginSave (const juce::MemoryBlock& raw, const juce::String& name, const juce::String& from, ProgramRef current,
+                    bool fromLibrary = false);
     bool isSaving() const { return saving; }
     void confirmSave(); // writes (TEO-5 slot) or stores (your bank), loads it into the edit buffer, then onSaveFinished
     void cancelSave();  // puts your edit back in the edit buffer, then onSaveFinished
@@ -88,9 +90,9 @@ public:
     // Choose where to save (what a click on a slot does while saving); the slot's program goes to the edit buffer.
     void setSaveTarget (ProgramRef);
     ProgramRef getSaveTarget() const { return saveTarget; }
-    // The editor closes the drawer and updates the panel. saved = false: cancelled. `bank`/`program`: the TEO-5
-    // location written, if the program went to a User bank.
-    std::function<void (bool saved, std::optional<HardwareTransfer::BankAddress> bank, int program)> onSaveFinished;
+    // The editor updates the panel and closes the drawer, unless the save started in the library (keepOpen). saved =
+    // false: cancelled. `bank`/`program`: the TEO-5 location written, if the program went to a User bank.
+    std::function<void (bool saved, std::optional<HardwareTransfer::BankAddress> bank, int program, bool keepOpen)> onSaveFinished;
     juce::Component& getSavePanel();
     // Closing the drawer with LIBRARY: if TEO-5 User banks have changes not sent, ask whether to send them first.
     // `close` runs unless the user cancels.
@@ -168,7 +170,7 @@ private:
     // Saving (WRITE).
     class SavePanel;
     std::unique_ptr<SavePanel> savePanel;
-    bool saving = false, auditioned = false;
+    bool saving = false, auditioned = false, saveFromLibrary = false;
     juce::MemoryBlock saveRaw;
     juce::String saveName, saveFrom;
     ProgramRef saveTarget; // index may be the bank's size: the empty slot after one of your banks' programs
