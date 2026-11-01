@@ -20,7 +20,7 @@ export TEO5_LAYOUT_FILE="$OUT/layout.json"
 # name, then the snapshot mode arguments
 shot() { local name=$1; shift; "$SNAP" "$OUT/img/$name.png" 2 "$@" >/dev/null; }
 shot panel
-for m in sequencer modmatrix drawer global program guide skins; do shot $m $m; done
+for m in sequencer modmatrix drawer global program guide skins skinedit; do shot $m $m; done
 shot modmatrix-assign modmatrix assign
 shot library-write library write          # WRITE: the library as a picker with the Save pop-up
 TEO5_SNAPSHOT_CLICKS="37,167;483,167" shot library library   # opens TEO-5 User 1 and My Programs

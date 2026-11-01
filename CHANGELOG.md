@@ -3,14 +3,16 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
-## 1.2.0 (test build, not released)
+## 1.2.0 (2026-11-01)
 
 **Added**
 - **Custom skins.** In the SKINS drawer, **+ New custom skin** opens a skin editor that starts from the skin in use.
   Choose six things (Panel, Lettering, Pinstripes, LEDs, Drawers, and Dark or Light drawers) with a colour picker, a
   hex box or presets; the whole editor changes as you pick. A warning appears (with **Fix contrast**) if the lettering
   would be hard to read. **Save** adds it under MY SKINS with its own picture; **Cancel** puts back what you had.
-  Custom skins can be edited, duplicated, exported as a .teoskin file and imported again, or deleted.
+  Custom skins can be edited, duplicated, exported as a .teoskin file and imported again, or deleted (the actions
+  are under each one's picture). After Save, Duplicate or Import the list scrolls to the skin. Your custom skins and
+  your choice come back every time you open the editor.
 
 ## 1.1.0 (2026-11-01)
 
