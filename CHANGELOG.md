@@ -3,6 +3,15 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.2.1 (2026-11-06)
+
+**Changed**
+- Every knob now sits centred over its label. The panel was laid out from a photo, whose perspective had pushed the
+  knobs towards the left and right edges by up to 10 pixels.
+- Every knob is the same distance above its label (the gaps had varied, largest in the top row); each row of labels
+  stays level.
+- All drawer tabs (LIBRARY, MOD MATRIX, SEQUENCER, GLOBAL, PROGRAM, MIDI, SKINS) are the same height.
+
 ## 1.2.0 (2026-11-01)
 
 **Added**

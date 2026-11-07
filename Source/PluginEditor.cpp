@@ -789,14 +789,14 @@ void TEO5Editor::resized()
     programDrawer.setBounds (globalDrawer.getBounds());
     skinsDrawer.setBounds (globalDrawer.getBounds());
 
-    // Four tabs down the right end cheek.
+    // Every drawer tab is the same height, on both cheeks: 110 px, smaller when the editor is too short for four.
+    const int tabGap = 10, tabH = juce::jmin (110, (getHeight() - 3 * tabGap - 24) / 4);
     {
-        const int h[] = { 84, 96, 64, 70 }, gap = 10;
-        int y = (getHeight() - (h[0] + h[1] + h[2] + h[3] + 3 * gap)) / 2;
-        for (auto [tab, i] : { std::pair<DrawerTab*, int> { &globalTab, 0 }, { &programTab, 1 }, { &drawerTab, 2 }, { &skinsTab, 3 } })
+        int y = (getHeight() - (4 * tabH + 3 * tabGap)) / 2;
+        for (auto* tab : { &globalTab, &programTab, &drawerTab, &skinsTab })
         {
-            tab->setBounds (getWidth() - cheek, y, cheek, h[i]);
-            y += h[i] + gap;
+            tab->setBounds (getWidth() - cheek, y, cheek, tabH);
+            y += tabH + tabGap;
         }
     }
 
@@ -816,13 +816,12 @@ void TEO5Editor::resized()
     const int sequencerW = juce::jmin (1170, getWidth() - cheek - 40);
     sequencer.setBounds (cheek, 0, sequencerW, getHeight());
 
-    // Three tabs down the left end cheek.
-    const int tabH[] = { 104, 124, 124 }, tabGap = 10;
-    int y = (getHeight() - (tabH[0] + tabH[1] + tabH[2] + 2 * tabGap)) / 2;
-    for (auto [tab, i] : { std::pair<DrawerTab*, int> { &libraryTab, 0 }, { &modMatrixTab, 1 }, { &sequencerTab, 2 } })
+    // Three tabs down the left end cheek, the same height as the right's.
+    int y = (getHeight() - (3 * tabH + 2 * tabGap)) / 2;
+    for (auto* tab : { &libraryTab, &modMatrixTab, &sequencerTab })
     {
-        tab->setBounds (0, y, cheek, tabH[i]);
-        y += tabH[i] + tabGap;
+        tab->setBounds (0, y, cheek, tabH);
+        y += tabH + tabGap;
     }
 }
 
