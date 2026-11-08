@@ -3,6 +3,14 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.2.2 (2026-11-08)
+
+**Changed**
+- The version number is now in the panel's bottom-left corner, in larger, brighter text.
+- The pinstripe lines sit the same way relative to the knobs across the whole panel: every row of knobs and labels is
+  level from left to right, and each label sits halfway between two lines in both the top and bottom halves. Buttons,
+  LEDs and arcs moved with their sections, so they keep their alignment.
+
 ## 1.2.1 (2026-11-06)
 
 **Changed**

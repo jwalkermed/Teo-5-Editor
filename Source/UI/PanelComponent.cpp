@@ -41,10 +41,10 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     }
 
     // ================= MASTER =================
-    addKnob ("masterVolume", 190, 540, stdKnob); // knobs sit centred on their labels (the photo's parallax had moved them)
-    addKnob ("overdrive", 190, 644, stdKnob);
-    label ("VOLUME", 190, 574);
-    label ("OVERDRIVE", 190, 678);
+    addKnob ("masterVolume", 190, 539, stdKnob); // knobs sit centred on their labels (the photo's parallax had moved them)
+    addKnob ("overdrive", 190, 643, stdKnob);
+    label ("VOLUME", 190, 573);
+    label ("OVERDRIVE", 190, 677);
 
     // ================= LFO 1: MONO | LFO 2: POLY =================
     lfoSync = &addButton (277, 538, false);
@@ -160,95 +160,95 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     label ("WRITE", 846, 611);
 
     // ================= CLOCK =================
-    addKnob ("clockBpm", 933, 537, stdKnob);
-    addKnob ("clockDiv", 1020, 537, stdKnob);
-    addButton (976, 641, true).onClick = [this] { if (onPanelAction) onPanelAction ("tap"); };
-    label ("BPM", 933, 571);
-    label ("CLK DIV", 1020, 571);
-    label ("TAP TEMPO", 977, 675);
+    addKnob ("clockBpm", 933, 539, stdKnob);
+    addKnob ("clockDiv", 1020, 539, stdKnob);
+    addButton (976, 643, true).onClick = [this] { if (onPanelAction) onPanelAction ("tap"); };
+    label ("BPM", 933, 573);
+    label ("CLK DIV", 1020, 573);
+    label ("TAP TEMPO", 977, 677);
 
     // ================= ARPEGGIATOR =================
-    addToggle ("arpOn", 1106, 537, false);
-    addKnob ("arpRange", 1202, 537, stdKnob);
-    addKnob ("arpMode", 1107, 641, stdKnob);
-    addKnob ("arpRepeat", 1202, 641, stdKnob);
+    addToggle ("arpOn", 1106, 539, false);
+    addKnob ("arpRange", 1202, 539, stdKnob);
+    addKnob ("arpMode", 1107, 643, stdKnob);
+    addKnob ("arpRepeat", 1202, 643, stdKnob);
     for (int i = 0; i < 3; ++i)
     {
-        arpOctLeds[i] = &addLed (1163, 554 - 17.5f * (float) i);
-        arpRepLeds[i] = &addLed (1163, 658 - 17.5f * (float) i);
-        label (juce::String (i + 1), 1150, 554 - 17.5f * (float) i, 7.4f);
-        label (juce::String (i + 1), 1150, 658 - 17.5f * (float) i, 7.4f);
+        arpOctLeds[i] = &addLed (1163, 556 - 17.5f * (float) i);
+        arpRepLeds[i] = &addLed (1163, 660 - 17.5f * (float) i);
+        label (juce::String (i + 1), 1150, 556 - 17.5f * (float) i, 7.4f);
+        label (juce::String (i + 1), 1150, 660 - 17.5f * (float) i, 7.4f);
     }
-    label ("ON", 1106, 571);
-    label ("OCTAVE", 1202, 571);
-    label ("MODE", 1107, 675);
-    label ("REPEAT", 1202, 675);
+    label ("ON", 1106, 573);
+    label ("OCTAVE", 1202, 573);
+    label ("MODE", 1107, 677);
+    label ("REPEAT", 1202, 677);
 
     // ================= SEQ =================
     // RECORD is the sequencer drawer's REC (step entry; lit while on). The TEO-5's own RECORD stays on the synth.
     {
-        auto& rec = addButton (1289, 537, false);
+        auto& rec = addButton (1289, 539, false);
         rec.onClick = [this] { if (onPanelAction) onPanelAction ("record"); };
         rec.litWhen = [this] { return isActionLit && isActionLit ("record"); };
         rec.setTooltip ("Step entry: opens the sequencer with REC on");
     }
-    addToggle ("seqPlay", 1289, 641, false);
-    label ("RECORD", 1289, 571);
-    label ("PLAY", 1289, 675);
+    addToggle ("seqPlay", 1289, 643, false);
+    label ("RECORD", 1289, 573);
+    label ("PLAY", 1289, 677);
 
     // ================= EFFECT / REVERB =================
-    addToggle ("fxOn", 1376, 537, false);
-    addKnob ("fxType", 1445, 537, stdKnob);
-    addKnob ("fxTime", 1536, 537, stdKnob);
-    addKnob ("fxMix", 1627, 537, stdKnob);
-    addKnob ("fxMisc", 1718, 537, stdKnob);
-    addToggle ("fxSync", 1807, 537, false);
-    label ("ON", 1376, 571);
-    label ("TYPE", 1445, 571);
-    label ("TIME", 1536, 571);
-    label ("DEPTH/MIX", 1627, 571);
-    label ("FBACK/MISC", 1718, 571);
-    label ("CLK SYNC", 1808, 571);
+    addToggle ("fxOn", 1376, 539, false);
+    addKnob ("fxType", 1445, 539, stdKnob);
+    addKnob ("fxTime", 1536, 539, stdKnob);
+    addKnob ("fxMix", 1627, 539, stdKnob);
+    addKnob ("fxMisc", 1718, 539, stdKnob);
+    addToggle ("fxSync", 1807, 539, false);
+    label ("ON", 1376, 573);
+    label ("TYPE", 1445, 573);
+    label ("TIME", 1536, 573);
+    label ("DEPTH/MIX", 1627, 573);
+    label ("FBACK/MISC", 1718, 573);
+    label ("CLK SYNC", 1808, 573);
 
-    addToggle ("revOn", 1376, 641, false);
-    addKnob ("revMix", 1445, 641, stdKnob);
-    addKnob ("revSize", 1536, 641, stdKnob);
-    addKnob ("revPredelay", 1627, 641, stdKnob);
-    addKnob ("revDecay", 1718, 641, stdKnob);
-    addKnob ("revTone", 1810, 641, stdKnob);
-    label ("ON", 1376, 675);
-    label ("MIX", 1445, 675);
-    label ("SIZE", 1536, 675);
-    label ("PREDELAY", 1627, 675);
-    label ("DECAY", 1718, 675);
-    label ("TONE", 1810, 675);
-    label ("Dry", 1416, 660, 5.6f);
-    label ("Wet", 1474, 660, 5.6f);
-    label ("LP", 1774, 660, 5.6f);
-    label ("HP", 1846, 660, 5.6f);
+    addToggle ("revOn", 1376, 643, false);
+    addKnob ("revMix", 1445, 643, stdKnob);
+    addKnob ("revSize", 1536, 643, stdKnob);
+    addKnob ("revPredelay", 1627, 643, stdKnob);
+    addKnob ("revDecay", 1718, 643, stdKnob);
+    addKnob ("revTone", 1810, 643, stdKnob);
+    label ("ON", 1376, 677);
+    label ("MIX", 1445, 677);
+    label ("SIZE", 1536, 677);
+    label ("PREDELAY", 1627, 677);
+    label ("DECAY", 1718, 677);
+    label ("TONE", 1810, 677);
+    label ("Dry", 1416, 662, 5.6f);
+    label ("Wet", 1474, 662, 5.6f);
+    label ("LP", 1774, 662, 5.6f);
+    label ("HP", 1846, 662, 5.6f);
 
     // ================= MISC =================
-    addKnob ("vintage", 192, 766, stdKnob);
-    addKnob ("osc1Glide", 192, 871, stdKnob); // TODO: verify - panel "Rate" may drive both osc glides
-    label ("VINTAGE", 192, 800);
-    label ("RATE", 192, 905);
+    addKnob ("vintage", 192, 764, stdKnob);
+    addKnob ("osc1Glide", 192, 868, stdKnob); // TODO: verify - panel "Rate" may drive both osc glides
+    label ("VINTAGE", 192, 798);
+    label ("RATE", 192, 902);
 
     // ================= OSCILLATORS =================
-    addKnob ("osc1Freq", 322, 765, stdKnob);
-    addKnob ("osc1PW", 443, 765, stdKnob); // TODO: verify - single PW knob vs. per-osc NRPN 5/6
-    addKnob ("osc2Freq", 566, 765, stdKnob);
-    detuneLed = &addLed (443, 826);
+    addKnob ("osc1Freq", 322, 764, stdKnob);
+    addKnob ("osc1PW", 443, 764, stdKnob); // TODO: verify - single PW knob vs. per-osc NRPN 5/6
+    addKnob ("osc2Freq", 566, 764, stdKnob);
+    detuneLed = &addLed (443, 825);
     addToggle ("osc1Tri", 277, 868, false);
     addToggle ("osc1Saw", 322, 868, false);
     addToggle ("osc1Pulse", 365, 868, false);
-    addKnob ("osc2Detune", 443, 869, stdKnob);
+    addKnob ("osc2Detune", 443, 868, stdKnob);
     addToggle ("osc2Tri", 521, 868, false);
     addToggle ("osc2Saw", 565, 868, false);
     addToggle ("osc2Pulse", 608, 868, false);
-    label ("FREQUENCY 1", 322, 799);
-    label ("PULSE WIDTH", 443, 799);
-    label ("FREQUENCY 2", 566, 799);
-    label ("OSC 2 DETUNE", 443, 903);
+    label ("FREQUENCY 1", 322, 798);
+    label ("PULSE WIDTH", 443, 798);
+    label ("FREQUENCY 2", 566, 798);
+    label ("OSC 2 DETUNE", 443, 902);
 
     // ================= OSC MOD =================
     addKnob ("xMod", 688, 764, stdKnob);
@@ -259,23 +259,23 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     // ================= FILTER =================
     addKnob ("resonance", 808, 764, stdKnob);
     addKnob ("cutoff", 938, 815, 122.0f, KnobStyle::Cutoff);
-    addKnob ("filterState", 1068, 766, 52.0f);
-    bpLed = &addLed (1068, 815);
+    addKnob ("filterState", 1068, 767, 52.0f);
+    bpLed = &addLed (1068, 816);
     addToggle ("osc1On", 782, 868, true);
     addToggle ("subOn", 834, 868, true);
     addToggle ("osc2On", 1041, 868, true);
     addToggle ("noiseOn", 1094, 868, true);
     label ("RESONANCE", 808, 798);
-    label ("NOTCH", 1068, 728, 7.0f);
-    label ("LP", 1027, 779, 7.0f);
-    label ("HP", 1110, 779, 7.0f);
-    label ("STATE", 1068, 797);
-    label ("BP", 1068, 831, 7.4f);
+    label ("NOTCH", 1068, 729, 7.0f);
+    label ("LP", 1027, 780, 7.0f);
+    label ("HP", 1110, 780, 7.0f);
+    label ("STATE", 1068, 798);
+    label ("BP", 1068, 832, 7.4f);
     label ("OSC 1", 783, 902);
     label ("SUB", 835, 902);
-    label ("CUTOFF", 938, 901);
-    label ("OSC 2", 1043, 901);
-    label ("NOISE", 1094, 901);
+    label ("CUTOFF", 938, 902);
+    label ("OSC 2", 1043, 902);
+    label ("NOISE", 1094, 902);
 
     // ================= ENVELOPES =================
     const float envX[] = { 1312, 1417, 1522, 1627, 1733 };
@@ -284,29 +284,29 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     const char* envLabels[] = { "ATTACK", "DECAY", "SUSTAIN", "RELEASE", "AMOUNT" };
     for (int i = 0; i < 5; ++i)
     {
-        addKnob (env1Ids[i], envX[i], 796 - 34, stdKnob); // every knob the same distance above its label
-        addKnob (env2Ids[i], envX[i], 900 - 34, stdKnob);
+        addKnob (env1Ids[i], envX[i], 798 - 34, stdKnob); // every knob the same distance above its label
+        addKnob (env2Ids[i], envX[i], 902 - 34, stdKnob);
         label (envLabels[i], envX[i], 796);
         label (envLabels[i], envX[i], 900);
     }
-    addToggle ("env1Vel", 1805, 763, false);
-    addToggle ("env2Vel", 1805, 866, false);
-    label ("VELOCITY", 1805, 796);
-    label ("VELOCITY", 1805, 900);
+    addToggle ("env1Vel", 1805, 765, false);
+    addToggle ("env2Vel", 1805, 868, false);
+    label ("VELOCITY", 1805, 798);
+    label ("VELOCITY", 1805, 902);
 
-    label ("ENV 1", 1205, 727, 9.6f, left);
-    label ("ENV 2", 1205, 831, 9.6f, left);
-    env1Leds[0] = &addLed (1211, 745);
-    env1Leds[1] = &addLed (1211, 762);
-    env2Leds[0] = &addLed (1211, 848);
-    env2Leds[1] = &addLed (1211, 865);
-    env2Leds[2] = &addLed (1211, 883);
-    label ("Filter", 1221, 745, 7.8f, left);
-    label ("Aux", 1221, 762, 7.8f, left);
-    label ("Amp", 1221, 848, 7.8f, left);
-    label ("Filter+Amp", 1221, 865, 7.8f, left);
-    label ("Filter+Gate", 1221, 883, 7.8f, left);
-    addCycle ("envRoute", 1181, 901, false); // the ENV 1 / ENV 2 routing button, the size of the others
+    label ("ENV 1", 1205, 729, 9.6f, left);
+    label ("ENV 2", 1205, 833, 9.6f, left);
+    env1Leds[0] = &addLed (1211, 747);
+    env1Leds[1] = &addLed (1211, 764);
+    env2Leds[0] = &addLed (1211, 850);
+    env2Leds[1] = &addLed (1211, 867);
+    env2Leds[2] = &addLed (1211, 885);
+    label ("Filter", 1221, 747, 7.8f, left);
+    label ("Aux", 1221, 764, 7.8f, left);
+    label ("Amp", 1221, 850, 7.8f, left);
+    label ("Filter+Amp", 1221, 867, 7.8f, left);
+    label ("Filter+Gate", 1221, 885, 7.8f, left);
+    addCycle ("envRoute", 1181, 903, false); // the ENV 1 / ENV 2 routing button, the size of the others
 
     // ================= Bottom strip =================
     addToggle ("glideOn", 192, 955, true);
@@ -734,7 +734,7 @@ void PanelComponent::paintPinstripes (juce::Graphics& g)
     };
 
     // Top row sections.
-    const float topY = 492.0f;
+    const float topY = 494.7f; // labels (y 573 / 677) sit halfway between two lines
     block (147, 233, topY, 12);
     block (250, 486, topY, 12);
     block (503, 565, topY, 12);
@@ -744,7 +744,7 @@ void PanelComponent::paintPinstripes (juce::Graphics& g)
     block (1338, 1852, topY, 12);
 
     // Lower sections.
-    const float lowY = 720.0f;
+    const float lowY = 719.7f; // labels (y 798 / 902) likewise, so every knob sits the same on its lines
     block (147, 233, lowY, 12);
     block (250, 635, lowY, 12);
     block (643, 733, lowY, 12);
@@ -799,11 +799,11 @@ void PanelComponent::paintSilkscreen (juce::Graphics& g)
         g.drawText (t.text, r, t.just, false);
     }
 
-    // Version, small in the bottom-right corner.
-    g.setFont (TEO5LookAndFeel::panelFont (7.0f));
-    g.setColour (Palette::silkscreen.withAlpha (0.45f));
-    g.drawText ("v" TEO5_VERSION, Rectangle<float> ((float) getWidth() - 120.0f, (float) getHeight() - 14.0f, 92.0f, 12.0f),
-                Justification::centredRight, false);
+    // Version, in the bottom-left corner.
+    g.setFont (TEO5LookAndFeel::panelFont (13.0f));
+    g.setColour (Palette::silkscreen.withAlpha (0.6f));
+    g.drawText ("v" TEO5_VERSION, Rectangle<float> (24.0f, (float) getHeight() - 19.0f, 80.0f, 18.0f),
+                Justification::centredLeft, false);
 
     // Program numbers along the bank line.
     const float progX[] = { 834, 886, 938, 990, 1051, 1103, 1155, 1207, 1268, 1320, 1372, 1424, 1484, 1536, 1588, 1640 };
@@ -871,7 +871,7 @@ void PanelComponent::paintGlyphs (juce::Graphics& g)
 
     // Oscillator waveform legends.
     for (auto [x, t] : { std::pair<float, int> { 279, 0 }, { 322, 1 }, { 366, 2 }, { 522, 0 }, { 566, 1 }, { 609, 2 } })
-        wave (t, x, 903, 17, 6);
+        wave (t, x, 902, 17, 6);
 
     // Curved bracket arcs around bipolar knobs.
     auto bracket = [&] (float cx, float cy, float r, const String& lo, const String& hi, float textSize)
@@ -891,10 +891,10 @@ void PanelComponent::paintGlyphs (juce::Graphics& g)
             g.drawText (hi, Rectangle<float> (20, 12).withCentre (c.getPointOnCircumference (r + 7.0f, 2.2f)), Justification::centred);
         }
     };
-    bracket (443, 869, 32, juce::String::fromUTF8 ("\xe2\x80\x93"), "+", 9.0f); // Osc 2 Detune
-    bracket (1733, 762, 32, juce::String::fromUTF8 ("\xe2\x80\x93"), "+", 9.0f); // Env 1 Amount
-    bracket (1810, 641, 32, {}, {}, 0);                                          // Reverb Tone (LP/HP labels separate)
-    bracket (1068, 766, 33, {}, {}, 0);                                          // Filter State
+    bracket (443, 868, 32, juce::String::fromUTF8 ("\xe2\x80\x93"), "+", 9.0f); // Osc 2 Detune
+    bracket (1733, 764, 32, juce::String::fromUTF8 ("\xe2\x80\x93"), "+", 9.0f); // Env 1 Amount
+    bracket (1810, 643, 32, {}, {}, 0);                                          // Reverb Tone (LP/HP labels separate)
+    bracket (1068, 767, 33, {}, {}, 0);                                          // Filter State
 
     // Cutoff tick marks.
     {
@@ -910,9 +910,9 @@ void PanelComponent::paintGlyphs (juce::Graphics& g)
     // ENV 1 / ENV 2 selector bracket.
     {
         const float x = X (1182);
-        g.fillRect (Rectangle<float> (x, Y (727), 1.2f, Y (884) - Y (727)));
-        g.fillRect (Rectangle<float> (x, Y (727), 20.0f, 1.2f));
-        g.fillRect (Rectangle<float> (x, Y (831), 20.0f, 1.2f));
+        g.fillRect (Rectangle<float> (x, Y (729), 1.2f, Y (886) - Y (729)));
+        g.fillRect (Rectangle<float> (x, Y (729), 20.0f, 1.2f));
+        g.fillRect (Rectangle<float> (x, Y (833), 20.0f, 1.2f));
     }
 }
 
