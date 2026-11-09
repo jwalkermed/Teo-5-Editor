@@ -535,7 +535,6 @@ void OledDisplay::paintFilter (juce::Graphics& g, juce::Rectangle<float> area, j
     auto v = [&] (const char* id) { return liveValue ? liveValue (id) : 0; };
     const float h = area.getHeight();
     auto stateRow = area.removeFromBottom (h * 0.2f);
-    auto freqRow = area.removeFromBottom (h * 0.17f);
     area = area.reduced (2.0f, 1.0f);
 
     const double fc = 20.0 * std::pow (1000.0, v ("cutoff") / 1023.0);      // 20 Hz .. 20 kHz
@@ -550,15 +549,7 @@ void OledDisplay::paintFilter (juce::Graphics& g, juce::Rectangle<float> area, j
         return area.getY() + area.getHeight() * (dbTop - jlimit (dbBottom, dbTop, (float) db)) / (dbTop - dbBottom);
     };
 
-    // Grid: 100 Hz, 1 kHz, 10 kHz and 0 dB.
-    g.setFont (TEO5LookAndFeel::oledFont (freqRow.getHeight() * 0.85f));
-    for (auto [f, label] : { std::pair<double, const char*> { 100.0, "100" }, { 1000.0, "1k" }, { 10000.0, "10k" } })
-    {
-        g.setColour (white.withAlpha (0.14f));
-        g.fillRect (fx (f), area.getY(), 1.0f, area.getHeight());
-        g.setColour (white.withAlpha (0.45f));
-        g.drawText (label, Rectangle<float> (fx (f) - 12.0f, freqRow.getY(), 24.0f, freqRow.getHeight()), Justification::centred, false);
-    }
+    // 0 dB line only: the TEO-5 publishes no frequency for cutoff positions, so no Hz scale.
     g.setColour (white.withAlpha (0.3f));
     for (float x = area.getX(); x < area.getRight(); x += 4.0f)
         g.fillRect (x, dy (0.0), 1.5f, 1.0f);

@@ -3,6 +3,13 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.3.1 (2026-11-09)
+
+**Changed**
+- The filter graph on the display no longer shows a frequency scale (100 / 1k / 10k). The TEO-5 doesn't publish a
+  frequency for the cutoff knob's positions, so the marks implied a precision that isn't there. The curve uses the
+  freed space.
+
 ## 1.3.0 (2026-11-08)
 
 **Added**
