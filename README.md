@@ -1,59 +1,125 @@
 # TEO-5 Editor
 
-VST3 / AU / Standalone editor-librarian for the Oberheim TEO-5 desktop module, built with JUCE 8 + CMake.
+Editor and librarian for the Oberheim TEO-5, as a VST3, Audio Unit and standalone app for macOS (Apple Silicon and
+Intel, macOS 11 or later). Built with JUCE 8 and CMake.
 
 ![TEO-5 Editor front panel](docs/screenshots/panel.png)
 
-> Status: version 1.0. The full user's guide is [docs/manual](docs/manual) (built as a PDF into each release);
-> in the editor, the **?** at the top left of the panel opens a guide to the front panel.
-> Front panel, MIDI sync, librarian, mod matrix and sequencer are done and in use with a TEO-5. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
+> **Version 1.3.1.** Download the zip from the [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
+> It includes the full user's guide (PDF). In the editor, the **?** at the top left of the panel opens a guide to the
+> front panel. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
-## Librarian
+## What it does
 
-Click the **LIBRARY** tab on the left end cheek, or the LIBRARY button next to FACTORY.
+- **Front panel:** every knob and button of the TEO-5, synced both ways over NRPN. Turn a knob on screen and the
+  synth follows; turn one on the synth and the screen follows. While you turn a control, the display shows its new
+  value and, in brackets, the value stored in the program.
+- **Envelope and filter graphs:** turning an ENV 1 / ENV 2 knob, or the filter's CUTOFF, RESONANCE, STATE or BP,
+  draws the envelope or filter response on the display. The graph fades back to the home page when you let go.
+  These drawings are approximate; the TEO-5 doesn't publish the times or frequencies behind its knob positions.
+- **Programs:** BANK and PATCH buttons (or the arrow keys), COMPARE, WRITE, REVERT, INIT (the Basic Program) and PANIC.
+  Opening a saved DAW project sends its program back to the TEO-5's edit buffer.
+- **Librarian:** your TEO-5 banks and your own banks side by side, with search, tags, favourites, drag and drop,
+  .syx import and export, and undo.
+- **Mod matrix:** all 16 slots. Right-click a knob to modulate it from any source, or send a source to any destination.
+- **Sequencer:** a step editor for the program's 64-step, 5-note sequence, with step entry from the on-screen
+  keyboard, the DAW track or the TEO-5's keys.
+- **GLOBAL and PROGRAM drawers** for the settings that have no knob on the panel.
+- **Skins:** ten built-in colour schemes, plus your own.
 
-- **Fetch** pulls the current edit buffer, the current bank, or all user/factory banks from the TEO-5, with a
-  progress bar. Each fetched bank becomes a "TEO-5" bank; fetching the same bank again replaces it (undoable).
-- **Click** (or **Return**) loads a program into the TEO-5 edit buffer. That never writes memory. The SELECT
-  encoder steps through the list and loads after a short pause; VALUE jumps between banks.
-- **Right-click** a program for: load, write to the current panel location, rename, tags, favourite, copy/paste,
-  duplicate, export `.syx`, delete. Right-click a bank to rename, import into it, export it, send it to the TEO-5,
-  re-fetch it, or delete it.
-- **Drag** programs to reorder them or move them between banks. Drop `.syx` files from Finder to import them.
-- **Search** matches names, sources and tags. `tag:pad` searches tags only. **Favourites** filters starred programs.
-- **+ Current** saves the panel's current program into the selected bank.
-- **Undo/Redo** (Cmd+Z / Shift+Cmd+Z) covers every library edit. Cmd+C / Cmd+V / Delete work on the selection.
-- **COMPARE** on the panel toggles between your edit and the program as loaded, as on the hardware.
-  **WRITE** stores the edit in the current BANK/program location. Double-click the OLED to rename the program.
+| | |
+|---|---|
+| ![Filter graph](docs/screenshots/oled-filter.png) | ![Envelope graph](docs/screenshots/oled-envelope.png) |
 
-Anything that overwrites TEO-5 memory (WRITE, "Write to TEO-5 memory", "Send bank to TEO-5") asks for
-confirmation first and names the exact locations.
+## Install
 
-The library lives in `~/Documents/TEO5Editor/Library`: `library.json` holds banks and metadata, and
-`programs/<id>.syx` holds one edit-buffer dump per program. Those files also work with any SysEx librarian.
-A single exported program is an edit-buffer dump; an exported bank is 16 addressed program dumps.
-`TEO5_LIBRARY_DIR` overrides the folder (the tests use this).
+1. Download `TEO-5-Editor-<version>-macOS-Universal.zip` from the
+   [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases) and unzip it.
+2. Open Terminal, type `bash ` (with a space), drag `install.command` from the unzipped folder into the window,
+   and press Return. It installs:
+   - `TEO-5 Editor.vst3` → `/Library/Audio/Plug-Ins/VST3`
+   - `TEO-5 Editor.component` → `/Library/Audio/Plug-Ins/Components` (Audio Unit)
+   - `TEO-5 Editor.app` → `/Applications` (standalone)
+
+   It then runs a load test. Double-clicking `install.command` may be blocked, because the download isn't
+   notarized; running it from Terminal avoids that.
+3. Restart your DAW, or make it rescan its plug-ins. In Ableton Live, turn on **Use VST3 Plug-In System Folders**
+   (Settings → Plug-Ins), then hold Option and click **Rescan**.
 
 ## Connecting to the TEO-5
 
-1. On the TEO-5, press GLOBAL and set **MIDI Param Send = NRPN**, **MIDI Param Receive = NRPN**, **MIDI SysEx = On**,
-   set **MIDI SysEx Cable** to the connection you use (USB or MIDI), and **MIDI Program Send = On**.
-2. In the editor, click the **MIDI** tab on the right end cheek (the GLOBAL/PROGRAM buttons also open it). Pick the TEO-5
-   input/output ports and channel. Use **Find TEO-5** to confirm the connection (it shows the OS version).
-3. Program changes and **Receive edit buffer** update the whole panel; the editor knows the TEO-5's program format.
+1. On the TEO-5, press GLOBAL and set **MIDI Param Send = NRPN**, **MIDI Param Receive = NRPN**,
+   **MIDI SysEx = On**, **MIDI SysEx Cable** = the connection you use (USB or MIDI), and **MIDI Program Send = On**.
+   The editor won't get answers to its SysEx requests while Program Send is off.
+2. In the editor, click the **MIDI** tab on the right end cheek. Pick the TEO-5's input and output ports and the
+   channel, then click **Find TEO-5** to confirm the connection (it shows the synth's OS version).
+3. Program changes and **Receive edit buffer** update the whole panel.
 
-Panel edits are sent immediately as NRPN (or CC, if selected), coalesced and spaced ~1 ms apart. Knob moves on the
-TEO-5 update the panel. **Send all parameters** sends every panel value to the synth. Program buttons send Bank Select + Program
-Change and then fetch the edit buffer. The plugin talks to the ports directly because many DAWs don't pass SysEx.
-MIDI settings are saved with the DAW project. (Routing through the DAW's MIDI instead is kept for a possible Windows
-version, where ports often can't be shared; it's hidden on macOS.)
+Panel edits go out as NRPN (or CC, if you choose it). **Send all parameters** sends every panel value to the synth.
+The plug-in talks to the MIDI ports directly, because many DAWs don't pass SysEx through. MIDI settings are saved with
+the DAW project. The MIDI drawer's monitor lists every message sent and received.
 
-Built plugins are copied to `/Library/Audio/Plug-Ins/VST3` and `~/Library/Audio/Plug-Ins/Components` after
-each build. Turn that off with `-DTEO5_INSTALL_AFTER_BUILD=OFF`.
+![MIDI drawer](docs/screenshots/panel-midi-drawer.png)
+
+**Sequencer and arpeggiator:** when the TEO-5's MIDI Clock is set to In, In Thru or In No S/S, it only runs its
+sequencer and arpeggiator while MIDI clock arrives. In Live, turn on **Sync** for the TEO-5's port under
+Settings → Link, Tempo & MIDI.
+
+## Librarian
+
+Click the **LIBRARY** tab on the left end cheek, or the LIBRARY button on the panel.
+
+![Library](docs/screenshots/panel-library.png)
+
+- **Two panes:** **TEO-5** holds the User and Factory banks fetched from the synth. **MY BANKS** holds imported
+  .syx files and banks you make yourself.
+- **Fetch** gets the edit buffer, one bank, or all User or Factory banks from the TEO-5.
+  **TEO-5 → Library** fetches all 16 User banks; **Library → TEO-5** sends your changes back.
+- **Click** a program to load it into the TEO-5's edit buffer (this never writes memory). Shift- and Cmd-click
+  select without loading.
+- **Right-click** a program to load it, write it to TEO-5 memory, rename it, tag it, favourite it, copy, paste,
+  duplicate, export or delete it. Right-click a bank to rename, import into, export, send or fetch it again.
+- **Drag** programs to swap or move them, or between banks; Option-drag copies. Drop `.syx` files from Finder to
+  import them.
+- **NOT SENT** marks programs in the TEO-5 User banks that differ from what the synth holds. **Save all changes**
+  writes them, and lists what will be overwritten first.
+- **Search** matches names, sources and tags (`tag:pad` searches tags only). **Undo / Redo** (Cmd+Z /
+  Shift+Cmd+Z) cover every library edit.
+- **Factory banks are read-only.** Nothing writes to a factory location.
+
+**WRITE** on the panel opens the library as a picker. Click a User slot or one of your banks to hear what is there,
+then **Confirm** to save (or **Cancel** to put your edit back). Anything that overwrites TEO-5 memory asks first.
+
+The library lives in `~/Documents/TEO5Editor/Library`: `library.json` holds the banks and their details, and
+`programs/<id>.syx` holds one edit-buffer dump per program, which works with any SysEx librarian.
+
+## Mod matrix
+
+![Mod matrix](docs/screenshots/panel-modmatrix.png)
+
+All 16 slots, each with source, amount and destination. Click a slot's light to switch it off and on again. The
+drawer has Clear all, Revert, Undo and Redo. Right-click any knob that is a modulation destination to pick a source
+for it; right-click a source's controls (LFO, ENV 1/2, OSC 2, NOISE) to send it somewhere.
+
+## Sequencer
+
+![Sequencer](docs/screenshots/panel-sequencer.png)
+
+The program's step sequence: up to 64 steps with up to five notes each, with play / rest / tie per step, velocity,
+muting, transpose, copy and paste. Turn on **REC** to enter steps from the on-screen keyboard, the DAW track or the
+TEO-5's own keys. **PLAY** starts and stops the TEO-5's sequencer; with PLAY on, every DAW start restarts the
+sequence at step 1. Edits go to the synth's edit buffer, never to memory. The **?** in the drawer explains it all.
+
+## Skins
+
+![Skins](docs/screenshots/panel-skins.png)
+
+The SKINS tab picks one of ten built-in colour schemes, or makes your own (panel, lettering, pinstripes, LEDs and
+drawers), which you can export and share.
 
 ## Build
 
-Requirements: CMake ≥ 3.22, a C++17 compiler (Xcode / MSVC 2022), JUCE 8.
+Requirements: CMake 3.22 or later, Xcode (a C++17 compiler), JUCE 8.
 
 ```bash
 # Option A: let CMake fetch JUCE 8.0.10
@@ -62,41 +128,47 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DJUCE_PATH=/path/to/JUCE
 
 cmake --build build --config Release --target TEO5Editor_VST3 TEO5Editor_AU TEO5Editor_Standalone
+packaging/make-zip.sh    # -> dist/TEO-5-Editor-<version>-macOS-Universal.zip
 ```
 
-Artefacts land in `build/TEO5Editor_artefacts/Release/`. JUCE 8 bundles the VST3 SDK. To use an external
-SDK, pass `-DTEO5_VST3_SDK=/path/to/vst3sdk`. AU is built on macOS only.
+The build is universal (arm64 and x86_64). Artefacts land in `build/TEO5Editor_artefacts/Release/`, and are copied
+to `/Library/Audio/Plug-Ins` and `/Applications` after each build; turn that off with
+`-DTEO5_INSTALL_AFTER_BUILD=OFF`. `packaging/make-manual.sh` builds the user's guide PDF from `docs/manual`.
 
 ### Panel snapshot
 
-`TEO5Snapshot` renders the editor offscreen to a PNG (used to compare against the hardware photo):
+`TEO5Snapshot` renders the editor offscreen to a PNG. The pictures in this README come from it:
 
 ```bash
 cmake --build build --target TEO5Snapshot
-build/TEO5Snapshot_artefacts/Release/TEO5Snapshot docs/screenshots/panel.png 1.0
+TEO5_SKIN=0 build/TEO5Snapshot_artefacts/Release/TEO5Snapshot docs/screenshots/panel.png 1
 ```
 
-## Layout
+A third argument opens a drawer: `library`, `modmatrix`, `sequencer`, `skins`, `global`, `program`, `drawer` (MIDI)
+or `guide`.
 
-- `Source/Params/`: `ParamTable` is the single table (id, name, NRPN, CC, range, default, kind) that drives
-  the APVTS parameters, the UI and (soon) MIDI.
-- `Source/UI/`: `TEO5LookAndFeel` (knob/button/LED rendering), `Widgets` (Knob, PanelButton, Led,
-  SevenSegment, OledDisplay), `PanelComponent` (front panel laid out in the reference photo's pixel coordinates).
-- `Source/Midi/`: `Nrpn` (encoder + stateful decoder), `SysEx` (packed-MS-bit pack/unpack, requests, dumps),
-  `ProgramLayout` (dump byte layout + inference), `MidiPortManager` (direct ports, rate-limited sender),
-  `MidiSync` (APVTS ⇄ TEO-5, program change, dumps, layout probe, host routing).
-- `Source/Library/`: `LibraryModel` (banks/programs, JSON + .syx persistence, snapshot undo/redo, clipboard,
-  search), `SyxIO` (.syx import/export), `HardwareTransfer` (background fetch / bank send).
-- `Source/UI/LibraryDrawer`: the librarian UI.
+## Source layout
+
+- `Source/Params/`: `ParamTable`, the single parameter table (id, name, NRPN, CC, range, default) that drives the
+  plug-in parameters, the UI and MIDI. Ranges are measured on a TEO-5, not taken from the spec.
+- `Source/Midi/`: NRPN and SysEx encoding, the program's byte layout, the step sequence, the MIDI ports, and
+  `MidiSync`, which keeps the editor and the TEO-5 in step.
+- `Source/Library/`: the library model (banks, persistence, undo, clipboard, search), .syx import and export, and
+  transfers to and from the synth.
+- `Source/UI/`: the front panel, its widgets, skins, and the library, mod matrix, sequencer, settings and skins
+  drawers.
+- `Source/Tools/`: `TEO5Snapshot` and `TEO5PluginCheck` (a load test shipped in the zip).
 
 ## Tests
 
 ```bash
 cmake --build build --target TEO5Tests TEO5LoopbackTest
-build/TEO5Tests_artefacts/Release/TEO5Tests                # SysEx round-trip, NRPN parsing, layout inference
-build/TEO5LoopbackTest_artefacts/Release/TEO5LoopbackTest  # end-to-end against a fake TEO-5 (virtual ports)
+build/TEO5Tests_artefacts/Release/TEO5Tests                # SysEx round trips, NRPN parsing, sequence bytes
+build/TEO5LoopbackTest_artefacts/Release/TEO5LoopbackTest  # end to end against a fake TEO-5 on virtual ports
 ```
-- `docs/TEO5-MIDI-Implementation.txt`: the spec the table is built from. `VERIFY.md` lists every unconfirmed item.
+
+`docs/TEO5-MIDI-Implementation.txt` is the official MIDI spec; it's wrong in several places, and the editor follows
+values measured on a real TEO-5. `VERIFY.md` lists what hasn't been confirmed on hardware.
 
 ## Licence
 
