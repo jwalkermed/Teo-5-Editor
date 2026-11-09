@@ -3,6 +3,16 @@
 All notable changes to TEO-5 Editor, newest first. Each version's download is on the
 [releases page](https://github.com/jwalkermed/Teo-5-Editor/releases).
 
+## 1.3.0 (2026-11-08)
+
+**Added**
+- Turning an envelope knob (ENV 1 or ENV 2) shows the envelope's curve on the display, and the filter's CUTOFF,
+  RESONANCE, STATE and BP show the filter's response. The curve follows the knob as you turn it, the part you're
+  changing is drawn brighter, and it stays while you hold the mouse button, then fades back to the home page. The
+  time and frequency scales of the drawings are estimates.
+- **BP button** in the FILTER section, under STATE, in place of the BP light: switches the filter's band-pass on and
+  off (before, only the PROGRAM drawer could).
+
 ## 1.2.2 (2026-11-08)
 
 **Changed**

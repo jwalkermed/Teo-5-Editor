@@ -3,6 +3,7 @@
 // Renders the plugin editor offscreen to a PNG so the panel can be compared with the reference photo.
 // Usage: TEO5Snapshot <output.png> [scale] [drawer|library|modmatrix|sequencer|global|program|oled "message"]
 
+#include <map>
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
@@ -69,6 +70,34 @@ int main (int argc, char* argv[])
         home.bpm = argc > 5 ? juce::String (argv[5]) : juce::String ("120");
         home.edited = argc > 6 && juce::String (argv[6]) == "edited";
         oled.setHome (home);
+        auto image = oled.createComponentSnapshot (oled.getLocalBounds(), true, scale);
+        out.deleteFile();
+        juce::FileOutputStream stream (out);
+        juce::PNGImageFormat().writeImageToStream (image, stream);
+        return 0;
+    }
+    if (argc > 3 && juce::String (argv[3]) == "oledgraph")
+    {
+        // The OLED's envelope or filter graph: argv[4] = the control being turned (e.g. env1Attack, cutoff), then
+        // id=value pairs (native values) over these defaults.
+        std::map<juce::String, int> values { { "env1Attack", 40 }, { "env1Decay", 150 }, { "env1Sustain", 80 },
+                                             { "env1Release", 140 }, { "env1Amt", 220 }, { "env2Attack", 10 },
+                                             { "env2Decay", 120 }, { "env2Sustain", 100 }, { "env2Release", 110 },
+                                             { "env2Amt", 254 }, { "cutoff", 610 }, { "resonance", 140 },
+                                             { "filterState", 0 }, { "filterBP", 0 } };
+        for (int i = 5; i < argc; ++i)
+            values[juce::String (argv[i]).upToFirstOccurrenceOf ("=", false, false)]
+                = juce::String (argv[i]).fromFirstOccurrenceOf ("=", false, false).getIntValue();
+        const juce::String focus = argc > 4 ? juce::String (argv[4]) : juce::String ("env1Attack");
+        teo5::OledDisplay oled;
+        oled.setBounds (0, 0, 133, 104);
+        oled.liveValue = [&values] (const juce::String& id) { return values[id]; };
+        const bool env = focus.startsWith ("env");
+        oled.showGraph (! env ? teo5::OledDisplay::Graph::Filter
+                              : focus.startsWith ("env1") ? teo5::OledDisplay::Graph::Envelope1 : teo5::OledDisplay::Graph::Envelope2,
+                        focus, env ? "ENV " + focus.substring (3, 4) : juce::String ("FILTER"),
+                        env ? focus.substring (4).toUpperCase().replace ("AMT", "AMOUNT") : focus.toUpperCase(),
+                        juce::String (values[focus]), "100");
         auto image = oled.createComponentSnapshot (oled.getLocalBounds(), true, scale);
         out.deleteFile();
         juce::FileOutputStream stream (out);

@@ -19,6 +19,7 @@ const char* const panelGuide = R"(# KNOBS
 - The **mouse wheel** or trackpad turns knobs too (**Shift** for fine steps).
 - **Double-click** puts a knob back to the value stored in the loaded program.
 - While you turn, the display shows the new value and, in brackets, the stored one, so you can see how far you've moved.
+- Envelope knobs and the filter's CUTOFF, RESONANCE, STATE and BP draw their curve on the display while you turn them.
 - **Right-click** opens the modulation menu (see the next column). Right-click never changes a value.
 # BUTTONS AND LEDS
 Buttons switch on and off with a click and light red when on. Where the TEO-5 uses one button to step through choices (LFO shape, LFO 1/2, envelope destinations, arpeggiator octave and repeat), the LEDs next to it show the choice.

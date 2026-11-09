@@ -104,7 +104,6 @@ private:
     Led* arpOctLeds[3] {};
     Led* arpRepLeds[3] {};
     Led* detuneLed = nullptr;
-    Led* bpLed = nullptr;
     Led* env1Leds[2] {};
     Led* env2Leds[3] {};
 

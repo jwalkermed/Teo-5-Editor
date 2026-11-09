@@ -134,6 +134,7 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     label ("PROGRAM", 620, 612);
 
     addAndMakeVisible (oled);
+    oled.liveValue = [this] (const juce::String& id) { return nativeValue (id); };
     oled.setBounds (juce::Rectangle<float> (X (667), Y (500), 133, 104).toNearestInt());
 
     // BANK and PATCH up/down buttons (replace the hardware's SELECT/VALUE encoders).
@@ -260,7 +261,7 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     addKnob ("resonance", 808, 764, stdKnob);
     addKnob ("cutoff", 938, 815, 122.0f, KnobStyle::Cutoff);
     addKnob ("filterState", 1068, 767, 52.0f);
-    bpLed = &addLed (1068, 816);
+    addToggle ("filterBP", 1068, 828, false); // band-pass on/off (was an LED; PROGRAM had the only switch)
     addToggle ("osc1On", 782, 868, true);
     addToggle ("subOn", 834, 868, true);
     addToggle ("osc2On", 1041, 868, true);
@@ -270,7 +271,7 @@ PanelComponent::PanelComponent (juce::AudioProcessorValueTreeState& state, juce:
     label ("LP", 1027, 780, 7.0f);
     label ("HP", 1110, 780, 7.0f);
     label ("STATE", 1068, 798);
-    label ("BP", 1068, 832, 7.4f);
+    label ("BP", 1089, 828, 9.0f, left);
     label ("OSC 1", 783, 902);
     label ("SUB", 835, 902);
     label ("CUTOFF", 938, 902);
@@ -492,7 +493,29 @@ void PanelComponent::touched (const juce::String& paramId)
         if (storedValue)
             if (auto v = storedValue (paramId))
                 stored = valueToText (*def, *v);
-        oled.showParameter (def->name, valueToText (*def, nativeValue (paramId)), stored);
+        const auto value = valueToText (*def, nativeValue (paramId));
+
+        // Envelope and filter controls show their curve (OledDisplay::showGraph), named as on the panel.
+        static const std::pair<const char*, const char*> envParts[] = {
+            { "Attack", "ATTACK" }, { "Decay", "DECAY" }, { "Sustain", "SUSTAIN" }, { "Release", "RELEASE" }, { "Amt", "AMOUNT" } };
+        for (int e = 1; e <= 2; ++e)
+            for (auto [suffix, name] : envParts)
+                if (paramId == "env" + juce::String (e) + suffix)
+                {
+                    oled.showGraph (e == 1 ? OledDisplay::Graph::Envelope1 : OledDisplay::Graph::Envelope2, paramId,
+                                    "ENV " + juce::String (e), name, value, stored);
+                    return;
+                }
+        static const std::pair<const char*, const char*> filterParts[] = {
+            { "cutoff", "CUTOFF" }, { "resonance", "RESONANCE" }, { "filterState", "STATE" }, { "filterBP", "BP" } };
+        for (auto [id, name] : filterParts)
+            if (paramId == id)
+            {
+                oled.showGraph (OledDisplay::Graph::Filter, paramId, "FILTER", name, value, stored);
+                return;
+            }
+
+        oled.showParameter (def->name, value, stored);
     }
 }
 
@@ -617,7 +640,6 @@ void PanelComponent::refreshIndicators()
     }
 
     detuneLed->setLit (nativeValue ("osc2Detune") != 32);
-    bpLed->setLit (nativeValue ("filterBP") != 0);
 
     const int route = nativeValue ("envRoute");
     env1Leds[0]->setLit (route == 0);

@@ -144,6 +144,15 @@ public:
     // program as loaded) is shown smaller in parentheses after the value, if given.
     void showParameter (const juce::String& name, const juce::String& value, const juce::String& stored = {});
 
+    // Graph page while an envelope or filter control is changed: the curve, drawn from liveValue (native parameter
+    // values, read on every repaint), stays while the mouse button is held, then fades back to the home page.
+    // `focusId` is the control being changed (its part of the curve is drawn brighter).
+    enum class Graph { Envelope1, Envelope2, Filter };
+    void showGraph (Graph, const juce::String& focusId, const juce::String& section, const juce::String& name,
+                    const juce::String& value, const juce::String& stored);
+    std::function<int (const juce::String& paramId)> liveValue;
+    static constexpr double graphHoldMs = 1200.0, graphFadeMs = 800.0;
+
     void paint (juce::Graphics&) override;
     void mouseDoubleClick (const juce::MouseEvent&) override { if (onDoubleClick) onDoubleClick(); }
 
@@ -165,6 +174,16 @@ private:
     int shownFavourite = -2;
     juce::Rectangle<float> starArea; // where the star was drawn (for clicks)
     bool showingParam = false;
+
+    void paintHome (juce::Graphics&, juce::Rectangle<float> screen, juce::Colour white);
+    void paintGraph (juce::Graphics&, juce::Rectangle<float> screen, juce::Colour white);
+    void paintEnvelope (juce::Graphics&, juce::Rectangle<float> area, juce::Colour white, int env);
+    void paintFilter (juce::Graphics&, juce::Rectangle<float> area, juce::Colour white);
+    bool showingGraph = false, graphHeld = false;
+    Graph graph = Graph::Filter;
+    juce::String graphFocus, graphSection;
+    double graphTouched = 0.0;
+    float graphAlpha = 1.0f;
 };
 
 } // namespace teo5
